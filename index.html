@@ -135,9 +135,10 @@
   .slot.loser{opacity:.45;}
 
   /* Champion */
-  .champ-box{margin:0 11px; text-align:center;}
-  .cup{font-size:46px; line-height:1; filter:drop-shadow(0 4px 10px rgba(244,198,74,.35));}
-  .champ-card{margin-top:8px; border:1.5px solid var(--gold); border-radius:11px;
+  .champ-box{margin:0 11px; text-align:center; position:relative;}
+  .cup{position:absolute; left:0; right:0; bottom:100%; margin-bottom:7px;
+    font-size:46px; line-height:1; filter:drop-shadow(0 4px 10px rgba(244,198,74,.35));}
+  .champ-card{border:1.5px solid var(--gold); border-radius:11px;
     padding:11px 10px; background:linear-gradient(180deg,rgba(244,198,74,.16),rgba(244,198,74,.04));}
   .champ-card .ttl{font-size:10px; letter-spacing:.2em; text-transform:uppercase;
     color:var(--gold); font-weight:700;}
@@ -212,23 +213,24 @@
 
   // ---- Setzliste (32 Teams, aus den Original-Screenshots verifiziert) ----
   // Reihenfolge = Paarungen: (1,2)(3,4)... -> 16 Sechzehntelfinal-Spiele
+  // id = offizielle WM-Team-ID der Datenquelle (worldcup26.ir) für den automatischen Abgleich
   const TEAMS = [
-    {n:"Deutschland",   f:"🇩🇪"}, {n:"Paraguay",      f:"🇵🇾"},
-    {n:"Frankreich",    f:"🇫🇷"}, {n:"Schweden",      f:"🇸🇪"},
-    {n:"Südafrika",     f:"🇿🇦"}, {n:"Kanada",        f:"🇨🇦"},
-    {n:"Niederlande",   f:"🇳🇱"}, {n:"Marokko",       f:"🇲🇦"},
-    {n:"Portugal",      f:"🇵🇹"}, {n:"Kroatien",      f:"🇭🇷"},
-    {n:"Spanien",       f:"🇪🇸"}, {n:"Österreich",    f:"🇦🇹"},
-    {n:"USA",           f:"🇺🇸"}, {n:"Bosnien-Herz.", f:"🇧🇦"},
-    {n:"Belgien",       f:"🇧🇪"}, {n:"Senegal",       f:"🇸🇳"},
-    {n:"Brasilien",     f:"🇧🇷"}, {n:"Japan",         f:"🇯🇵"},
-    {n:"Elfenbeinküste",f:"🇨🇮"}, {n:"Norwegen",      f:"🇳🇴"},
-    {n:"Mexiko",        f:"🇲🇽"}, {n:"Ecuador",       f:"🇪🇨"},
-    {n:"England",       f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"}, {n:"DR Kongo",      f:"🇨🇩"},
-    {n:"Argentinien",   f:"🇦🇷"}, {n:"Kap Verde",     f:"🇨🇻"},
-    {n:"Australien",    f:"🇦🇺"}, {n:"Ägypten",       f:"🇪🇬"},
-    {n:"Schweiz",       f:"🇨🇭"}, {n:"Algerien",      f:"🇩🇿"},
-    {n:"Kolumbien",     f:"🇨🇴"}, {n:"Ghana",         f:"🇬🇭"}
+    {n:"Deutschland",   f:"🇩🇪", id:17}, {n:"Paraguay",      f:"🇵🇾", id:14},
+    {n:"Frankreich",    f:"🇫🇷", id:33}, {n:"Schweden",      f:"🇸🇪", id:23},
+    {n:"Südafrika",     f:"🇿🇦", id:2},  {n:"Kanada",        f:"🇨🇦", id:5},
+    {n:"Niederlande",   f:"🇳🇱", id:21}, {n:"Marokko",       f:"🇲🇦", id:10},
+    {n:"Kolumbien",     f:"🇨🇴", id:44}, {n:"Ghana",         f:"🇬🇭", id:47},
+    {n:"Spanien",       f:"🇪🇸", id:29}, {n:"Österreich",    f:"🇦🇹", id:39},
+    {n:"USA",           f:"🇺🇸", id:13}, {n:"Bosnien-Herz.", f:"🇧🇦", id:6},
+    {n:"Belgien",       f:"🇧🇪", id:25}, {n:"Senegal",       f:"🇸🇳", id:34},
+    {n:"Brasilien",     f:"🇧🇷", id:9},  {n:"Japan",         f:"🇯🇵", id:22},
+    {n:"Elfenbeinküste",f:"🇨🇮", id:19}, {n:"Norwegen",      f:"🇳🇴", id:36},
+    {n:"Mexiko",        f:"🇲🇽", id:1},  {n:"Ecuador",       f:"🇪🇨", id:20},
+    {n:"England",       f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", id:45}, {n:"DR Kongo",      f:"🇨🇩", id:42},
+    {n:"Argentinien",   f:"🇦🇷", id:37}, {n:"Kap Verde",     f:"🇨🇻", id:30},
+    {n:"Australien",    f:"🇦🇺", id:15}, {n:"Ägypten",       f:"🇪🇬", id:26},
+    {n:"Schweiz",       f:"🇨🇭", id:8},  {n:"Algerien",      f:"🇩🇿", id:38},
+    {n:"Portugal",      f:"🇵🇹", id:41}, {n:"Kroatien",      f:"🇭🇷", id:46}
   ];
 
   const LABELS = ["Letzte 32","Achtelfinale","Viertelfinale","Halbfinale","Finale"];
@@ -244,9 +246,9 @@
   const DTS = [
     // Letzte 32 (Paarungen 0..15)
     [["29.06.","22:30"],["30.06.","23:00"],["28.06.","21:00"],["30.06.","03:00"],
-     ["03.07.","01:00"],["02.07.","21:00"],["02.07.","02:00"],["01.07.","22:00"],
+     ["04.07.","03:30"],["02.07.","21:00"],["02.07.","02:00"],["01.07.","22:00"],
      ["29.06.","19:00"],["30.06.","19:00"],["01.07.","03:00"],["01.07.","18:00"],
-     ["04.07.","00:00"],["03.07.","20:00"],["03.07.","05:00"],["04.07.","03:30"]],
+     ["04.07.","00:00"],["03.07.","20:00"],["03.07.","05:00"],["03.07.","01:00"]],
     // Achtelfinale (0..7)
     [["04.07.","23:00"],["04.07.","19:00"],["06.07.","21:00"],["07.07.","02:00"],
      ["05.07.","22:00"],["06.07.","02:00"],["07.07.","18:00"],["07.07.","22:00"]],
@@ -263,6 +265,34 @@
   let score3 = ["",""];    // Ergebnis Spiel um Platz 3
   let dt3 = ["18.07.","23:00"];   // Datum/Uhrzeit Spiel um Platz 3
   let zoom = 1;            // Zoomfaktor (+/- Tasten)
+
+  // ---- Speichern / Laden (eigene Eingaben bleiben beim nächsten Aufruf erhalten) ----
+  const STORE_KEY = "wm2026-bracket-2";
+  function saveState(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify({v:1, winner, scores, dts, third, score3, dt3}));
+    }catch(e){/* z.B. privater Modus / Vorschau – dann eben nicht gespeichert */}
+  }
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return;
+      const d = JSON.parse(raw);
+      if(!d || d.v!==1) return;
+      const S = x => String(x==null?"":x);
+      for(let r=0;r<COUNTS.length;r++) for(let p=0;p<COUNTS[r];p++){
+        if(d.winner && d.winner[r] && (d.winner[r][p]===0||d.winner[r][p]===1||d.winner[r][p]===null))
+          winner[r][p]=d.winner[r][p];
+        if(d.scores && d.scores[r] && Array.isArray(d.scores[r][p]))
+          scores[r][p]=[S(d.scores[r][p][0]), S(d.scores[r][p][1])];
+        if(d.dts && d.dts[r] && Array.isArray(d.dts[r][p]))
+          dts[r][p]=[S(d.dts[r][p][0]), S(d.dts[r][p][1])];
+      }
+      if(d.third===0||d.third===1||d.third===null) third=d.third;
+      if(Array.isArray(d.score3)) score3=[S(d.score3[0]), S(d.score3[1])];
+      if(Array.isArray(d.dt3))    dt3=[S(d.dt3[0]), S(d.dt3[1])];
+    }catch(e){/* defekter Speicher -> Default-Stand */}
+  }
 
   // Team in Slot (r,p,side)
   function slotTeam(r,p,side){
@@ -382,6 +412,7 @@
     }
     thirdEl.innerHTML=t3;
 
+    saveState();
     requestAnimationFrame(drawLines);
   }
 
@@ -456,8 +487,8 @@
   // Eingaben: Datum/Zeit speichern; Ergebnis auswerten
   bracket.addEventListener("input",e=>{
     const f=readFid(e.target); if(!f) return;
-    if(f.kind==="d"){ dts[f.r][f.p][0]=e.target.value; return; }
-    if(f.kind==="t"){ dts[f.r][f.p][1]=e.target.value; return; }
+    if(f.kind==="d"){ dts[f.r][f.p][0]=e.target.value; saveState(); return; }
+    if(f.kind==="t"){ dts[f.r][f.p][1]=e.target.value; saveState(); return; }
     if(f.kind!=="s") return;
     scores[f.r][f.p][f.side]=e.target.value;
     const a=scores[f.r][f.p][0], b=scores[f.r][f.p][1];
@@ -485,8 +516,8 @@
   // ---- Spiel um Platz 3 ----
   thirdEl.addEventListener("input",e=>{
     const el=e.target, fid=(el.dataset?el.dataset.fid:null); if(!fid) return;
-    if(fid==="d3"){ dt3[0]=el.value; return; }
-    if(fid==="t3"){ dt3[1]=el.value; return; }
+    if(fid==="d3"){ dt3[0]=el.value; saveState(); return; }
+    if(fid==="t3"){ dt3[1]=el.value; saveState(); return; }
     if(fid==="s3-0") score3[0]=el.value;
     else if(fid==="s3-1") score3[1]=el.value;
     else return;
@@ -527,9 +558,77 @@
   document.getElementById("zoomIn").addEventListener("click",()=>setZoom(zoom+0.1));
   document.getElementById("zoomOut").addEventListener("click",()=>setZoom(zoom-0.1));
 
+  // ===== Automatischer Ergebnis-Abgleich mit der offiziellen Datenquelle =====
+  // Datenquelle: worldcup26.ir (kostenlos, ohne Schlüssel, CORS offen).
+  // Läuft auf echter Domain (GitHub Pages / Homescreen). Im Claude-Vorschau-Sheet
+  // scheitern externe Abrufe – dann bleibt einfach der gespeicherte/manuelle Stand.
+  const API_URL = "https://worldcup26.ir/get/games";
+  const TYPE_BY_ROUND = ["r32","r16","qf","sf","final"]; // Bracket-Runden 0..4
+
+  function applyLiveGames(games){
+    const byType = {};
+    for(const g of games){
+      const t = g && g.type; if(!t) continue;
+      (byType[t] = byType[t] || []).push(g);
+    }
+    const num = v => { const n = parseInt(v,10); return isNaN(n) ? null : n; };
+    const isFin = g => String(g.finished).toUpperCase() === "TRUE";
+    const find = (list, idA, idB) => list && list.find(g => {
+      const h = num(g.home_team_id), a = num(g.away_team_id);
+      return (h===idA && a===idB) || (h===idB && a===idA);
+    });
+    // Trägt API-Tore seitenrichtig ein; gibt true zurück, wenn etwas geändert wurde
+    function put(g, teamTop, setScore, getScore, setWin, curWin){
+      if(!isFin(g)) return false;
+      const h = num(g.home_team_id);
+      let so, su;
+      if(h===teamTop.id){ so=num(g.home_score); su=num(g.away_score); }
+      else              { so=num(g.away_score); su=num(g.home_score); }
+      if(so===null || su===null) return false;
+      let ch=false;
+      const cur=getScore();
+      if(cur[0]!==String(so) || cur[1]!==String(su)){ setScore([String(so),String(su)]); ch=true; }
+      const w = scoreWinner(String(so), String(su));
+      if(w!==null && curWin()!==w){ setWin(w); ch=true; }
+      return ch;
+    }
+    let changed=false;
+    for(let r=0;r<5;r++){
+      const list = byType[TYPE_BY_ROUND[r]];
+      for(let p=0;p<COUNTS[r];p++){
+        const tA=slotTeam(r,p,0), tB=slotTeam(r,p,1);
+        if(!tA||!tB) continue;
+        const g=find(list, tA.id, tB.id); if(!g) continue;
+        if(put(g, tA,
+              v=>{scores[r][p]=v;}, ()=>scores[r][p],
+              w=>{winner[r][p]=w; invalidateAfter(r,p);}, ()=>winner[r][p])) changed=true;
+      }
+    }
+    // Spiel um Platz 3
+    const lA=loserTeam(3,0), lB=loserTeam(3,1);
+    if(lA&&lB){
+      const g=find(byType["third"], lA.id, lB.id);
+      if(g && put(g, lA, v=>{score3=v;}, ()=>score3, w=>{third=w;}, ()=>third)) changed=true;
+    }
+    return changed;
+  }
+
+  function fetchLive(){
+    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), 9000));
+    Promise.race([ fetch(API_URL, {cache:"no-store"}).then(r=>r.json()), timeout ])
+      .then(data=>{
+        const games = data && data.games;
+        if(!Array.isArray(games)) return;
+        if(applyLiveGames(games)){ saveState(); render(); }
+      })
+      .catch(()=>{ /* Vorschau/offline/Quelle weg -> manueller Stand bleibt erhalten */ });
+  }
+
   window.addEventListener("resize",()=>applyZoom());
+  loadState();
   render();
   applyZoom();
+  fetchLive();
 })();
 </script>
 </body>
