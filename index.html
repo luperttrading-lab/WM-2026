@@ -5,6 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a1330">
+<meta name="apple-mobile-web-app-title" content="WM 2026">
+<title>WM 2026 · K.o.-Runde &amp; Simulation</title>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; height:100%; background:#0a1330; overflow:hidden;}
+  body{display:flex; flex-direction:column;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  .switchbar{flex:0 0 auto; display:flex; gap:8px;
+    padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;
+    background:#0a1330; border-bottom:1px solid rgba(160,190,255,.16); position:relative; z-index:5;}
+  .swtab{flex:1; padding:10px 8px; border-radius:11px; border:1px solid rgba(160,190,255,.22);
+    background:rgba(255,255,255,.04); color:#8190c4; font-size:15px; font-weight:800;
+    text-align:center; cursor:pointer; transition:background .15s,color .15s,border-color .15s;}
+  .swtab.active{background:#f4c64a; color:#1a1206; border-color:#f4c64a;}
+  .frames{flex:1 1 auto; position:relative; min-height:0;}
+  .frame{position:absolute; inset:0; width:100%; height:100%; border:0; display:block; background:#0a1330;}
+  .frame.hidden{display:none;}
+</style>
+</head>
+<body>
+  <div class="switchbar">
+    <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
+    <button class="swtab" data-v="s">🎲 Simulation</button>
+  </div>
+  <div class="frames">
+    <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
+    <iframe id="fs" class="frame hidden" title="Simulation"></iframe>
+  </div>
+
+  <script type="text/html" id="srcB"><!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#16245e">
 <link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-title" content="WM 2026">
@@ -86,7 +123,7 @@
     justify-content:space-around; flex:0 0 auto;}
   .round.r0{gap:4px;}
   .round.r0,.round.r1,.round.r2,.round.r3,.round.r4{width:258px;}
-  .round.champ{width:182px; justify-content:center;}
+  .round.champ{width:208px; justify-content:center;}
 
   .rlabel{position:absolute; top:-22px; left:0; right:0; text-align:center;
     font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
@@ -134,33 +171,31 @@
     border-color:rgba(150,185,255,.55);}
   .slot.loser{opacity:.45;}
 
-  /* Champion */
-  .champ-box{margin:0 11px; text-align:center; position:relative;}
-  .cup{position:absolute; left:0; right:0; bottom:100%; margin-bottom:7px;
-    font-size:46px; line-height:1; filter:drop-shadow(0 4px 10px rgba(244,198,74,.35));}
-  .champ-card{border:1.5px solid var(--gold); border-radius:11px;
-    padding:11px 10px; background:linear-gradient(180deg,rgba(244,198,74,.16),rgba(244,198,74,.04));}
-  .champ-card .ttl{font-size:10px; letter-spacing:.2em; text-transform:uppercase;
-    color:var(--gold); font-weight:700;}
-  .champ-card .who{margin-top:6px; font-size:16px; font-weight:800; min-height:20px;
-    display:flex; align-items:center; justify-content:center; gap:8px;}
-  .champ-card .who.ph{color:var(--muted); font-size:13px; font-weight:600;}
+  /* Champion / Endstand (Top 4) – Höhe & Position per alignFinish() an Finale+Platz3 angeglichen */
+  .champ-box{position:absolute; left:11px; right:11px;}
+  .cup{position:absolute; left:0; right:0; bottom:100%; margin-bottom:7px; text-align:center;
+    font-size:44px; line-height:1; filter:drop-shadow(0 4px 10px rgba(244,198,74,.35));}
+  .finish{border:1.5px solid var(--gold); border-radius:12px; overflow:hidden;
+    background:linear-gradient(180deg,rgba(244,198,74,.15),rgba(244,198,74,.03));
+    display:flex; flex-direction:column;}
+  .finish .ttl{flex:0 0 auto; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold);
+    font-weight:700; text-align:center; padding:8px 0 7px; border-bottom:1px solid rgba(244,198,74,.25);}
+  .rank{flex:1 1 0; min-height:0; display:flex; align-items:center; gap:8px; padding:0 11px; font-size:13.5px;
+    border-bottom:1px solid rgba(244,198,74,.13);}
+  .rank:last-child{border-bottom:0;}
+  .rpos{width:16px; flex:0 0 auto; text-align:center; font-weight:800; font-size:12px; color:var(--muted);}
+  .rflag{flex:0 0 auto; font-size:16px; width:19px; text-align:center;}
+  .rnm{font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .rnm.ph{color:var(--muted); font-weight:600;}
+  .rank.gold{background:rgba(244,198,74,.14);}
+  .rank.gold .rpos{color:var(--gold);}
+  .rank.gold .rnm{font-weight:800; color:#fff5dc;}
 
-  /* Spiel um Platz 3 */
-  .third{margin:26px auto 0; max-width:380px; text-align:center;}
-  .third .th{font-size:11px; letter-spacing:.2em; text-transform:uppercase;
-    font-weight:700; color:var(--gold); margin-bottom:9px;}
-  .third .pair{max-width:300px; margin:0 auto;}
-  .third .dtrow{display:flex; gap:8px; justify-content:center; align-items:baseline;
-    margin:0 auto 10px;}
-  .third .dtrow input{background:transparent; border:none; text-align:center;
-    font-family:inherit; cursor:text; border-radius:4px; padding:1px 2px;
-    -webkit-appearance:none;}
-  .third .dtrow input.d{font-size:12px; color:var(--muted); font-weight:600; width:62px;}
-  .third .dtrow input.t{font-size:14px; color:var(--txt); font-weight:700; width:56px;
-    letter-spacing:.2px; font-variant-numeric:tabular-nums;}
-  .third .dtrow input:focus{outline:none; background:rgba(160,190,255,.16);}
-  .third .note{font-size:11px; color:var(--muted); margin-top:8px;}
+  /* Finale + Spiel um Platz 3 (Platz-3 schwebt unter dem Finale) */
+  .finwrap{position:relative;}
+  .match3{position:absolute; top:100%; left:0; right:0; margin-top:30px;}
+  .m3lbl{text-align:center; margin-bottom:8px; font-size:9.5px; letter-spacing:.16em;
+    text-transform:uppercase; font-weight:700; color:var(--muted);}
 
   /* Confirm-Overlay (kein confirm()/alert()) */
   .overlay{position:fixed; inset:0; z-index:50; display:none;
@@ -366,51 +401,70 @@
          + `<div class="pair">${slotHTML(r,p,0)}${slotHTML(r,p,1)}</div></div>`;
   }
 
+  // Spiel um Platz 3 – gleicher Look wie ein normales Spiel (Datum/Zeit vorne),
+  // sitzt unter dem Finale. data-t3 statt data-r für die Sieger-Auswahl.
+  function thirdMatchHTML(){
+    const lA=loserTeam(3,0), lB=loserTeam(3,1);
+    const d=esc(dt3[0]), t=esc(dt3[1]);
+    const row=(team,side)=>{
+      const val=esc(score3[side]);
+      if(!team) return `<div class="slot empty"><span class="flag">·</span>`
+           + `<span class="nm">Verlierer HF</span>`
+           + `<input class="score" type="text" inputmode="numeric" maxlength="2" disabled value=""></div>`;
+      let cls="slot"+(third===side?" win":(third!==null?" loser":""));
+      return `<div class="${cls}" data-t3="${side}"><span class="flag">${team.f}</span>`
+           + `<span class="nm">${team.n}</span>`
+           + `<input class="score" type="text" inputmode="numeric" maxlength="2" `
+           + `data-fid="s3-${side}" value="${val}" placeholder="–"></div>`;
+    };
+    return `<div class="match3">`
+         + `<div class="m3lbl">Spiel um Platz 3</div>`
+         + `<div class="match">`
+         + `<div class="dt">`
+         + `<input class="d" type="text" maxlength="6" data-fid="d3" value="${d}" placeholder="TT.MM.">`
+         + `<input class="t" type="text" maxlength="5" data-fid="t3" value="${t}" placeholder="HH:MM">`
+         + `</div>`
+         + `<div class="pair">${row(lA,0)}${row(lB,1)}</div>`
+         + `</div></div>`;
+  }
+
+
   function render(){
     let html="";
     for(let r=0;r<COUNTS.length;r++){
       let inner=`<div class="rlabel">${LABELS[r]}</div>`;
-      for(let p=0;p<COUNTS[r];p++) inner+=matchHTML(r,p);
+      if(r===4){
+        // Finale + Spiel um Platz 3 zusammen (Platz-3 schwebt absolut unter dem Finale)
+        inner+=`<div class="finwrap">${matchHTML(4,0)}${thirdMatchHTML()}</div>`;
+      } else {
+        for(let p=0;p<COUNTS[r];p++) inner+=matchHTML(r,p);
+      }
       html+=`<div class="round r${r}">${inner}</div>`;
     }
-    const champ=winner[4][0]===null?null:slotTeam(4,0,winner[4][0]);
+
+    // ---- Letzte Spalte: Pokal + Endstand (Top 4) ----
+    const champ = winner[4][0]===null ? null : slotTeam(4,0,winner[4][0]);
+    const vize  = loserTeam(4,0);                       // Finalverlierer = Platz 2
+    const lA=loserTeam(3,0), lB=loserTeam(3,1);         // Halbfinal-Verlierer
+    let r3=null, r4=null;
+    if(third!==null){ r3 = third===0?lA:lB; r4 = third===0?lB:lA; }
+    const rankRow=(pos,t,gold)=>{
+      const body = t
+        ? `<span class="rflag">${t.f}</span><span class="rnm">${t.n}</span>`
+        : `<span class="rflag">·</span><span class="rnm ph">—</span>`;
+      return `<div class="rank${gold?' gold':''}"><span class="rpos">${pos}</span>${body}</div>`;
+    };
     html+=`<div class="round champ"><div class="rlabel">Weltmeister</div>`
         + `<div class="champ-box"><div class="cup">🏆</div>`
-        + `<div class="champ-card"><div class="ttl">Weltmeister</div>`
-        + (champ
-            ? `<div class="who">${champ.f}<span>${champ.n}</span></div>`
-            : `<div class="who ph">noch offen</div>`)
+        + `<div class="finish"><div class="ttl">Endstand</div>`
+        + rankRow(1, champ, true)
+        + rankRow(2, vize, false)
+        + rankRow(3, r3, false)
+        + rankRow(4, r4, false)
         + `</div></div></div>`;
 
     bracket.innerHTML = `<svg class="lines" id="lines"></svg>` + html;
-
-    // Spiel um Platz 3
-    const lA=loserTeam(3,0), lB=loserTeam(3,1);
-    let t3="";
-    if(lA||lB){
-      const row=(t,side)=>{
-        const val=esc(score3[side]);
-        if(!t) return `<div class="slot empty"><span class="flag">·</span>`
-             + `<span class="nm">Verlierer Halbfinale</span>`
-             + `<input class="score" type="text" disabled value=""></div>`;
-        let cls="slot"+(third===side?" win":(third!==null?" loser":""));
-        return `<div class="${cls}" data-t3="${side}"><span class="flag">${t.f}</span>`
-             + `<span class="nm">${t.n}</span>`
-             + `<input class="score" type="text" inputmode="numeric" maxlength="2" `
-             + `data-fid="s3-${side}" value="${val}" placeholder="–"></div>`;
-      };
-      t3=`<div class="th">Spiel um Platz 3</div>`
-       + `<div class="dtrow">`
-       + `<input class="d" type="text" maxlength="6" data-fid="d3" value="${esc(dt3[0])}" placeholder="TT.MM.">`
-       + `<input class="t" type="text" maxlength="5" data-fid="t3" value="${esc(dt3[1])}" placeholder="HH:MM">`
-       + `</div>`
-       + `<div class="pair">${row(lA,0)}${row(lB,1)}</div>`
-       + `<div class="note">Die beiden Halbfinal-Verlierer.</div>`;
-    } else {
-      t3=`<div class="th">Spiel um Platz 3</div>`
-       + `<div class="note">Erscheint, sobald die Halbfinals entschieden sind.</div>`;
-    }
-    thirdEl.innerHTML=t3;
+    thirdEl.innerHTML = "";   // separater Platz-3-Block wird nicht mehr genutzt
 
     saveState();
     requestAnimationFrame(drawLines);
@@ -429,9 +483,26 @@
     }
   }
 
+  // Endstand-Box bündig zu Finale (oben) und Spiel um Platz 3 (unten) ausrichten
+  function alignFinish(){
+    const finMatch = bracket.querySelector('.finwrap > .match');
+    const p3       = bracket.querySelector('.match3');
+    const champCol = bracket.querySelector('.round.champ');
+    const champBox = bracket.querySelector('.champ-box');
+    const finish   = bracket.querySelector('.finish');
+    if(!finMatch || !p3 || !champCol || !champBox || !finish) return;
+    const z = zoom || 1;
+    const colTop = champCol.getBoundingClientRect().top;
+    const ft = finMatch.getBoundingClientRect().top;    // Finale-Oberkante
+    const pb = p3.getBoundingClientRect().bottom;        // Platz-3-Unterkante
+    champBox.style.top    = ((ft - colTop) / z) + 'px';
+    finish.style.height   = ((pb - ft) / z) + 'px';
+  }
+
   function drawLines(){
     const svg=bracket.querySelector("svg.lines");
     if(!svg) return;
+    alignFinish();
     const z=zoom||1;
     const base=bracket.getBoundingClientRect();
     const W=bracket.offsetWidth, H=bracket.offsetHeight;
@@ -461,18 +532,6 @@
           const col = (winner[r-1][p*2+side]!==null) ? "var(--line-win)" : "var(--line)";
           paths+=`<path d="M${sx} ${sy} H${mx} V${dy} H${dx}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
         }
-      }
-    }
-    // Finale -> Champion
-    const fin=pairRect(4,0);
-    if(fin){
-      const champEl=bracket.querySelector(".champ-card");
-      if(champEl){
-        const cb=champEl.getBoundingClientRect();
-        const cx=(cb.left-base.left)/z, cy=(cb.top-base.top)/z+cb.height/z/2;
-        const sx=fin.r, sy=fin.t+fin.h/2, mx=(sx+cx)/2;
-        const col=winner[4][0]!==null?"var(--line-win)":"var(--line)";
-        paths+=`<path d="M${sx} ${sy} H${mx} V${cy} H${cx}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
       }
     }
     svg.innerHTML=paths;
@@ -513,8 +572,8 @@
     setWinner(+s.dataset.r, +s.dataset.p, +s.dataset.s);
   });
 
-  // ---- Spiel um Platz 3 ----
-  thirdEl.addEventListener("input",e=>{
+  // ---- Spiel um Platz 3 (sitzt jetzt im Bracket, unter dem Finale) ----
+  bracket.addEventListener("input",e=>{
     const el=e.target, fid=(el.dataset?el.dataset.fid:null); if(!fid) return;
     if(fid==="d3"){ dt3[0]=el.value; saveState(); return; }
     if(fid==="t3"){ dt3[1]=el.value; saveState(); return; }
@@ -528,7 +587,7 @@
     const w=scoreWinner(a,b);
     if(w!==null && third!==w){ third=w; renderKeepFocus(); }
   });
-  thirdEl.addEventListener("click",e=>{
+  bracket.addEventListener("click",e=>{
     if(e.target.closest("input")) return;
     const s=e.target.closest(".slot");
     if(!s || s.classList.contains("empty") || s.dataset.t3===undefined) return;
@@ -630,6 +689,849 @@
   applyZoom();
   fetchLive();
 })();
+[[SCRIPTEND]]
+</body>
+</html>
 </script>
+  <script type="text/html" id="srcS"><!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>WM 2026 – Monte-Carlo-Simulator</title>
+<style>
+  :root{
+    --bg:#0f1830; --bg2:#0b1226; --card:#172441; --card2:#1d2c4e;
+    --gold:#f4c64a; --blue:#6e9bf0; --blue-d:#4a6aa8;
+    --txt:#e7edff; --muted:#9fb0d6; --line:#2a3a5e; --win:#f4c64a;
+    --bar:#6e9bf0; --bar-top:#f4c64a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.4; padding:14px 12px 60px;
+    max-width:680px; margin:0 auto;
+  }
+  /* feste dunkle Grundfläche (gegen iOS-Dark-Mode-Overlay) */
+  #bgfix{position:fixed; inset:0; z-index:0; background:var(--bg);}
+  .app{position:relative; z-index:1;}
+
+  header{text-align:center; margin-bottom:9px;}
+  header h1{font-size:19px; font-weight:800; margin:0; letter-spacing:.3px;}
+  header .sub{font-size:12px; color:var(--muted); margin-top:3px;}
+
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:10px 13px; margin-bottom:10px;}
+  .grp{padding:6px 0; border-bottom:1px solid var(--line);}
+  .grp:first-child{padding-top:2px;}
+  .grp:last-child{border-bottom:0; padding-bottom:2px;}
+  .grp-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+  .grp-label{font-size:13px; font-weight:700; color:var(--txt);}
+  .grp-val{font-size:15px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums;}
+  .hint{font-size:11px; color:var(--muted); display:flex; justify-content:space-between; margin-top:4px;}
+  /* Turnierfaktor */
+  .spec{font-size:9px; font-weight:700; color:#1a1305; background:var(--gold);
+    padding:1px 6px; border-radius:7px; letter-spacing:.03em; margin-left:5px; vertical-align:1px;}
+  .tfwarn{display:none; font-size:11px; color:var(--muted); margin-top:9px; line-height:1.5;
+    background:rgba(244,198,74,.07); border:1px solid rgba(244,198,74,.22);
+    border-radius:9px; padding:8px 10px;}
+  .tfwarn b{color:#ffd96b;}
+  .tflink{display:block; margin-top:6px; background:none; border:none; color:var(--blue);
+    font-family:inherit; font-size:11px; font-weight:800; cursor:pointer; padding:2px 0; text-align:left;}
+  .tfinfo{display:none; margin-top:10px; padding-top:11px; border-top:1px solid var(--line);}
+  .tfinfo.on{display:block;}
+  .tfinfo p{margin:0 0 9px; font-size:11.5px; color:var(--muted); line-height:1.55;}
+  .tfinfo p b{color:var(--txt);}
+  .fp-title{font-size:10.5px; font-weight:800; color:var(--gold); text-align:center;
+    text-transform:uppercase; letter-spacing:.05em; margin:2px 0 6px;}
+  .fpsvg{width:100%; height:auto; display:block; margin-bottom:3px;}
+
+
+  /* Slider */
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:30px;
+    background:transparent; cursor:pointer; margin:0; touch-action:none;}
+  input[type=range]::-webkit-slider-runnable-track{height:6px; border-radius:3px;
+    background:linear-gradient(90deg,var(--blue) var(--fill,50%),#243355 var(--fill,50%));}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none;
+    width:24px; height:24px; border-radius:50%; background:var(--gold);
+    border:3px solid #1a2440; margin-top:-9px; box-shadow:0 2px 5px rgba(0,0,0,.4);}
+  input[type=range]:disabled{opacity:.4;}
+  input[type=range]:disabled::-webkit-slider-thumb{background:var(--muted);}
+
+  /* Toggle */
+  .switch{position:relative; width:50px; height:28px; flex:0 0 auto;}
+  .switch input{opacity:0; width:0; height:0; position:absolute;}
+  .slider-sw{position:absolute; inset:0; background:#243355; border-radius:28px; transition:.2s;}
+  .slider-sw:before{content:""; position:absolute; height:22px; width:22px; left:3px; top:3px;
+    background:#fff; border-radius:50%; transition:.2s;}
+  .switch input:checked + .slider-sw{background:var(--gold);}
+  .switch input:checked + .slider-sw:before{transform:translateX(22px);}
+
+  /* Lauf-Buttons + Tabs */
+  .seg{display:flex; gap:6px;}
+  .seg button{flex:1; padding:9px 4px; border:1px solid var(--line); background:#142036;
+    color:var(--muted); border-radius:9px; font-family:inherit; font-size:13px; font-weight:700;
+    cursor:pointer; transition:.12s;}
+  .seg button.on{background:var(--blue); color:#0b1226; border-color:var(--blue);}
+
+  .tabs{display:flex; gap:8px; margin-bottom:10px;}
+  .tabs button{flex:1; padding:11px 5px; border:1px solid var(--line); background:var(--card);
+    color:var(--muted); border-radius:11px; font-family:inherit; font-size:12.5px; font-weight:700;
+    cursor:pointer; transition:.12s;}
+  .tabs button.on{background:var(--gold); color:#1a1305; border-color:var(--gold);}
+
+  .view{display:none;}
+  .view.on{display:block;}
+
+  /* Wahrscheinlichkeits-Liste */
+  .status{font-size:12px; color:var(--muted); text-align:center; padding:6px 0 11px; min-height:26px;}
+  .rowlist{display:flex; flex-direction:column; gap:3px;}
+  .row{background:var(--card); border:1px solid var(--line); border-radius:9px;
+    padding:5px 9px; display:flex; align-items:center; gap:7px;}
+  .row .flag{font-size:16px; width:21px; text-align:center; flex:0 0 auto;}
+  .row .mid{flex:1 1 auto; min-width:0;}
+  .row .nm{font-size:12.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .row .det{font-size:9.5px; color:var(--muted); margin-top:1px; font-variant-numeric:tabular-nums;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .row .barwrap{flex:0 0 78px; height:8px; background:#1a2740; border-radius:5px; overflow:hidden;}
+  .row .bar{height:100%; background:var(--bar); border-radius:5px; transition:width .35s ease;}
+  .row.top .bar{background:var(--bar-top);}
+  .row .pct{flex:0 0 42px; text-align:right; font-size:13px; font-weight:800;
+    font-variant-numeric:tabular-nums;}
+  .row.top .pct{color:var(--gold);}
+
+  /* einzeilige Tabelle, beide Modi mit Kopfzeile */
+  .phead{display:flex; align-items:center; gap:4px; padding:2px 9px 4px; font-size:8px;
+    border:1px solid transparent; color:var(--muted); text-transform:uppercase;
+    letter-spacing:.05em; font-weight:700;}
+  .prow{display:flex; align-items:center; gap:4px; padding:2px 9px; margin-bottom:2px; line-height:1.15;
+    background:var(--card); border:1px solid var(--line); border-radius:7px; font-size:11px;}
+  .prow.top{border-color:rgba(244,198,74,.3);}
+  .phead .pf,.prow .pf{flex:0 0 17px; font-size:13px; text-align:center;}
+  /* Team-Spalte: Kürzel fest schmal | Name flexibel mit Ellipsis */
+  .phead .pteam,.prow .pteam{flex:0 0 84px; min-width:0; font-weight:700; color:var(--txt);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .prow.top .pteam{color:var(--gold);}
+  .phead .pcol,.prow .pcol{flex:0 0 19px; text-align:right; font-variant-numeric:tabular-nums;}
+  .phead .pcolf,.prow .pcolf{flex:0 0 24px; text-align:right; font-variant-numeric:tabular-nums;}
+  .phead .pcolf{text-align:center;}   /* "F" mittig über der breiteren Dezimalzahl */
+  .prow .pcol,.prow .pcolf{color:var(--muted);}
+  .phead .pwm,.prow .pwm{flex:0 0 30px; text-align:right; font-weight:800; font-size:12px;
+    font-variant-numeric:tabular-nums; color:var(--txt);}
+  .prow.top .pwm{color:var(--gold);}
+  /* Trichter-Balken: in beiden Modi gleich (nimmt Restplatz) */
+  .phead .pfunnel,.prow .pfunnel{flex:1 1 auto; min-width:0;}
+  .prow .pfunnel{display:flex; align-items:center;}
+  .fbar{display:block; width:100%; height:7px; border-radius:3px;}
+
+  /* Einzel-Turnier */
+  .rollbtn{width:100%; padding:13px; border:none; border-radius:12px; background:var(--gold);
+    color:#1a1305; font-family:inherit; font-size:15px; font-weight:800; cursor:pointer;
+    margin-bottom:13px; box-shadow:0 3px 10px rgba(244,198,74,.25);}
+  .rollbtn:active{transform:translateY(1px);}
+  /* Aktionszeile: Würfel-Button + Namensumschalter (höhenneutral) */
+  .actionrow{display:flex; gap:8px; align-items:stretch; margin-bottom:10px;}
+  .actionrow .rollbtn{flex:1 1 auto; margin-bottom:0;}
+  .nmtog{flex:0 0 auto; display:flex; border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; background:#142036;}
+  .nmtog button{border:none; background:transparent; color:var(--muted);
+    font-family:inherit; font-size:12.5px; font-weight:700; padding:0 12px; cursor:pointer;
+    white-space:nowrap; transition:.12s;}
+  .nmtog button + button{border-left:1px solid var(--line);}
+  .nmtog button.on{background:var(--gold); color:#1a1305;}
+  /* Turnierbaum */
+  .treewrap{overflow:auto; -webkit-overflow-scrolling:touch; border:1px solid var(--line);
+    border-radius:12px; background:var(--bg2); padding:7px; margin-bottom:9px;}
+  .treezoom{position:relative;}
+  .tree{position:relative; display:flex; align-items:stretch; gap:6px; width:max-content;
+    padding-top:15px; transform-origin:top left;}
+  svg.tlines{position:absolute; top:0; left:0; pointer-events:none; z-index:0; overflow:visible;}
+  .tcol{position:relative; z-index:1; display:flex; flex-direction:column;
+    justify-content:space-around; flex:0 0 auto; width:var(--colw,64px);}
+  .tcol.c0{gap:2px;}
+  .tcol.finalcol{justify-content:center;}
+  .finalwrap{display:flex; flex-direction:column; gap:16px; align-items:stretch;}
+  .tlabel{position:absolute; top:-14px; left:0; right:0; text-align:center; font-size:8.5px;
+    letter-spacing:.02em; text-transform:uppercase; font-weight:800; color:var(--gold); white-space:nowrap;}
+  .mbox{border:1px solid var(--line); border-radius:5px; overflow:hidden; background:var(--card);}
+  .tslot{display:flex; align-items:center; gap:1px; height:16px; padding:0 3px; font-size:9px;
+    border-bottom:1px solid var(--line); line-height:1;}
+  .tslot:last-child{border-bottom:0;}
+  .tslot .tf{font-size:10px; flex:0 0 auto; width:12px; text-align:center;}
+  .tslot .tn{flex:1 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600;}
+  .tree.codemode .tslot .tn{flex:0 0 22px; font-size:9px;}     /* breite Spalte, MAR/SWE voll lesbar */
+  .tslot .tg{flex:0 0 6px; font-size:9px; font-weight:800; font-variant-numeric:tabular-nums;
+    text-align:right; color:var(--muted);}
+  /* Sieger: helle Schrift + goldener Marker; Verlierer: leicht gedämpft; keine Flächenfarbe */
+  .tslot.win .tn{color:#eef2f8;}
+  .tslot.win .tg{color:#eef2f8;}
+  .tslot.lose .tn{color:#97a3b6;}
+  .tslot.lose .tg{color:#97a3b6;}
+  .tslot.lose .tf{opacity:.72;}
+  .tslot .tm{flex:0 0 11px; line-height:1; font-weight:800; color:var(--gold);}
+  .tslot .tm.tmo{font-size:5.5px; align-self:flex-start; margin-top:.5px; text-align:left;
+    letter-spacing:-.2px; padding-left:1px;}
+  .tslot .tm.tmw{font-size:9px; align-self:center; text-align:center;}
+  .champbox{border:1.5px solid var(--gold); border-radius:8px; padding:5px 4px; text-align:center;
+    background:linear-gradient(180deg,rgba(244,198,74,.2),rgba(244,198,74,.04));}
+  .champbox .cuptag{font-size:7px; letter-spacing:.1em; text-transform:uppercase; font-weight:800;
+    color:var(--gold); margin-bottom:1px; opacity:.85;}
+  .champbox .cup2{font-size:18px; line-height:1; filter:drop-shadow(0 3px 8px rgba(244,198,74,.4));}
+  .champbox .cn{margin-top:2px; font-size:9.5px; font-weight:800; color:#fff5dc;
+    display:flex; align-items:center; justify-content:center; gap:3px; flex-wrap:wrap; line-height:1.1;}
+  .champbox .cn .cf{font-size:12px;}
+
+  /* Zoom-Leiste */
+  .zoomrow{display:flex; align-items:center; gap:10px; margin-bottom:13px;}
+  .zb{width:40px; height:34px; flex:0 0 auto; border:1px solid var(--line); background:var(--card);
+    color:var(--txt); border-radius:9px; font-size:20px; font-weight:700; cursor:pointer;}
+  .zb:active{background:var(--card2);}
+  .zr{flex:1 1 auto;}
+
+  /* Endstand */
+  .finish{border:1.5px solid var(--gold); border-radius:13px; overflow:hidden; margin-top:6px;
+    background:linear-gradient(180deg,rgba(244,198,74,.14),rgba(244,198,74,.03));}
+  .cup{text-align:center; font-size:40px; line-height:1; margin:4px 0 -2px;
+    filter:drop-shadow(0 4px 10px rgba(244,198,74,.35));}
+  .finish .ft{font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--gold);
+    font-weight:800; text-align:center; padding:9px 0 8px; border-bottom:1px solid rgba(244,198,74,.25);}
+  .frow{display:flex; align-items:center; gap:9px; padding:10px 13px; font-size:14.5px;
+    border-bottom:1px solid rgba(244,198,74,.12);}
+  .frow:last-child{border-bottom:0;}
+  .frow .fp{width:17px; flex:0 0 auto; text-align:center; font-weight:800; font-size:13px; color:var(--muted);}
+  .frow .ff{font-size:18px; flex:0 0 auto;}
+  .frow .fn{font-weight:700;}
+  .frow.gold{background:rgba(244,198,74,.13);}
+  .frow.gold .fp{color:var(--gold);} .frow.gold .fn{font-weight:800; color:#fff5dc;}
+
+  @media (prefers-reduced-motion:reduce){
+    .row .bar{transition:none;}
+  }
+  /* Info-Button + Modal */
+  .ibtn{display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px;
+    border-radius:50%; border:1px solid var(--muted); background:none; color:var(--muted);
+    font-size:10px; font-weight:700; font-style:italic; font-family:Georgia,"Times New Roman",serif;
+    cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; line-height:1; flex:0 0 auto;}
+  .ibtn:active{background:var(--muted); color:#0a1330;}
+  .ibtn.tabinfo{margin-left:0; flex:0 0 38px; width:38px; height:auto; border-radius:11px; font-size:14px; align-self:stretch; border-color:var(--line); color:var(--muted);}
+  .ctrl{display:flex; align-items:center; gap:9px;}
+  .grp-val.sm{font-size:13px;}
+  .imodal{position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center;
+    background:rgba(5,10,22,.74); padding:18px;}
+  .imodal.on{display:flex;}
+  .imodal-card{background:#0f1c34; border:1px solid var(--line); border-radius:16px;
+    max-width:340px; width:100%; max-height:82vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    box-shadow:0 18px 50px rgba(0,0,0,.55);}
+  .imodal-head{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:14px 16px 8px; position:sticky; top:0; background:#0f1c34;}
+  .imodal-title{font-size:16px; font-weight:800; color:var(--gold);}
+  .imodal-x{background:rgba(255,255,255,.08); border:0; color:var(--txt); width:30px; height:30px;
+    min-width:30px; border-radius:50%; font-size:14px; cursor:pointer;}
+  .imodal-body{padding:2px 16px 18px; font-size:12.5px; line-height:1.6; color:var(--muted);}
+  .imodal-body p{margin:0 0 11px;}
+  .imodal-body b{color:var(--txt);}
+  .imodal-body .iwarn{background:rgba(244,198,74,.08); border:1px solid rgba(244,198,74,.25);
+    border-radius:9px; padding:9px 11px; margin-bottom:12px; font-size:11.5px;}
+  .imodal-body .iwarn b{color:#ffd96b;}
+</style>
+</head>
+<body>
+<div id="bgfix"></div>
+<div class="app">
+  <header>
+    <h1>WM 2026 · Monte-Carlo</h1>
+    <div class="sub">FIFA-Elo-Simulation der K.-o.-Runde</div>
+  </header>
+
+  <div class="panel">
+    <div class="grp">
+      <div class="grp-head">
+        <span class="grp-label">Divisor<button class="ibtn" data-info="div">i</button></span>
+        <span class="grp-val" id="divVal">600</span>
+      </div>
+      <input type="range" id="divSld" min="300" max="800" step="20" value="600">
+    </div>
+
+    <div class="grp">
+      <div class="grp-head">
+        <span class="grp-label">Heimvorteil<button class="ibtn" data-info="home">i</button></span>
+        <span class="ctrl"><span class="grp-val sm" id="homeHint">aus</span><label class="switch"><input type="checkbox" id="homeTog"><span class="slider-sw"></span></label></span>
+      </div>
+      <input type="range" id="homeSld" min="0" max="150" step="5" value="75" disabled>
+    </div>
+
+    <div class="grp">
+      <div class="grp-head">
+        <span class="grp-label">Turnierfaktor<span class="spec">spekulativ</span><button class="ibtn" data-info="tf">i</button></span>
+        <label class="switch"><input type="checkbox" id="tfTog"><span class="slider-sw"></span></label>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <button id="tabProb" class="on">Wahrscheinlichkeiten</button>
+    <button id="tabSingle">Ein mögliches Turnier</button>
+    <button class="ibtn tabinfo" data-info="tabs">i</button>
+  </div>
+
+  <div class="view on" id="viewProb">
+    <div class="actionrow">
+      <button class="rollbtn" id="simBtn">🎲 Simulation starten</button>
+      <div class="nmtog" role="group" aria-label="Namensanzeige">
+        <button type="button" data-mode="code" class="on">Kürzel</button>
+        <button type="button" data-mode="full">Name</button>
+      </div>
+    </div>
+    <div class="status" id="probStatus"></div>
+    <div class="rowlist" id="probList"></div>
+  </div>
+
+  <div class="view" id="viewSingle">
+    <div class="actionrow">
+      <button class="rollbtn" id="rollBtn">🎲 Turnier auswürfeln</button>
+      <div class="nmtog" role="group" aria-label="Namensanzeige">
+        <button type="button" data-mode="code" class="on">Kürzel</button>
+        <button type="button" data-mode="full">Name</button>
+      </div>
+    </div>
+    <div class="treewrap" id="treeWrap">
+      <div class="treezoom" id="treeZoom">
+        <div class="tree" id="tree"></div>
+      </div>
+    </div>
+    <div class="zoomrow">
+      <button class="zb" id="tzOut" aria-label="kleiner">−</button>
+      <input type="range" class="zr" id="tzSld" min="60" max="220" step="10" value="100" aria-label="Zoom">
+      <button class="zb" id="tzIn" aria-label="größer">+</button>
+    </div>
+    <div id="singleFinish"></div>
+  </div>
+</div>
+
+<div class="imodal" id="imodal">
+  <div class="imodal-card">
+    <div class="imodal-head"><span class="imodal-title" id="imodalTitle"></span><button class="imodal-x" id="imodalX">✕</button></div>
+    <div class="imodal-body" id="imodalBody"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const LN10 = Math.LN10;
+
+  // Teams in Bracket-Slot-Reihenfolge (Pos 0–15, je oben/unten)
+  const TEAMS = [
+    {n:"Deutschland",c:"GER",p:1735.77,f:"🇩🇪",tf:0.0696}, {n:"Paraguay",c:"PAR",p:1505.35,f:"🇵🇾",tf:0.0501},
+    {n:"Frankreich",c:"FRA",p:1870.70,f:"🇫🇷",tf:0.0818}, {n:"Schweden",c:"SWE",p:1509.79,f:"🇸🇪",tf:-0.0133},
+    {n:"Südafrika",c:"RSA",p:1428.38,f:"🇿🇦",tf:null},  {n:"Kanada",c:"CAN",p:1559.48,f:"🇨🇦",host:1,tf:null},
+    {n:"Niederlande",c:"NED",p:1753.57,f:"🇳🇱",tf:0.0622},{n:"Marokko",c:"MAR",p:1755.10,f:"🇲🇦",tf:0.0748},
+    {n:"Kolumbien",c:"COL",p:1698.35,f:"🇨🇴",tf:-0.0142},  {n:"Ghana",c:"GHA",p:1380.00,f:"🇬🇭",tf:null},
+    {n:"Spanien",c:"ESP",p:1874.71,f:"🇪🇸",tf:-0.0284},    {n:"Österreich",c:"AUT",p:1597.40,f:"🇦🇹",tf:null},
+    {n:"USA",c:"USA",p:1671.23,f:"🇺🇸",host:1,tf:-0.0957}, {n:"Bosnien-Herz.",c:"BIH",p:1387.22,f:"🇧🇦",tf:null},
+    {n:"Belgien",c:"BEL",p:1742.24,f:"🇧🇪",tf:0.1094},    {n:"Senegal",c:"SEN",p:1684.07,f:"🇸🇳",tf:null},
+    {n:"Brasilien",c:"BRA",p:1765.86,f:"🇧🇷",tf:0.0301},  {n:"Japan",c:"JPN",p:1661.58,f:"🇯🇵",tf:-0.0388},
+    {n:"Elfenbeinküste",c:"CIV",p:1540.87,f:"🇨🇮",tf:null},{n:"Norwegen",c:"NOR",p:1557.44,f:"🇳🇴",tf:null},
+    {n:"Mexiko",c:"MEX",p:1687.48,f:"🇲🇽",host:1,tf:0.0149},{n:"Ecuador",c:"ECU",p:1598.52,f:"🇪🇨",tf:null},
+    {n:"England",c:"ENG",p:1828.02,f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",tf:-0.0649},   {n:"DR Kongo",c:"COD",p:1474.43,f:"🇨🇩",tf:null},
+    {n:"Argentinien",c:"ARG",p:1877.27,f:"🇦🇷",tf:0.0892},{n:"Kap Verde",c:"CPV",p:1350.00,f:"🇨🇻",tf:null},
+    {n:"Australien",c:"AUS",p:1579.34,f:"🇦🇺",tf:-0.0277}, {n:"Ägypten",c:"EGY",p:1562.37,f:"🇪🇬",tf:null},
+    {n:"Schweiz",c:"SUI",p:1650.06,f:"🇨🇭",tf:0.0478},    {n:"Algerien",c:"ALG",p:1571.03,f:"🇩🇿",tf:null},
+    {n:"Portugal",c:"POR",p:1767.85,f:"🇵🇹",tf:-0.0467},   {n:"Kroatien",c:"CRO",p:1714.87,f:"🇭🇷",tf:0.1124},
+  ];
+  const NT = TEAMS.length; // 32
+
+  // Namensanzeige: 'full' = voller Name, 'code' = FIFA-3-Buchstaben-Kürzel
+  let nameMode = 'code';
+  const teamLabel = t => nameMode === 'code' ? t.c : t.n;
+  let SCORES_IN_NAME_MODE = false;  // Tore nur im Kürzel-Modus (Namen sonst zu kurz)
+  const scoresVisible = () => nameMode==='code' || SCORES_IN_NAME_MODE;
+  // Cache der letzten Ergebnisse (Umschalten soll NICHT neu simulieren/würfeln)
+  let lastSim = null, lastProb = null;
+
+  // Parameter-State
+  let DIV = 600, HOME_ON = false, HOME_BONUS = 75, NRUN = 100000;
+  let TF_ON = false, TF_STR = 1.0;
+  const TF_K = 4/LN10;   // Turnierfaktor -> Elo-Bonus, divisor-konsistent
+
+  function effPts(){
+    const p = new Float64Array(NT);
+    const k = TF_ON ? DIV*TF_K*TF_STR : 0;
+    for(let i=0;i<NT;i++){
+      let v = TEAMS[i].p + (HOME_ON && TEAMS[i].host ? HOME_BONUS : 0);
+      if(TF_ON && TEAMS[i].tf!=null) v += TEAMS[i].tf * k;
+      p[i] = v;
+    }
+    return p;
+  }
+
+  // ---- Aggregat: N Turniere, Wahrscheinlichkeiten pro Runde ----
+  function runMany(N){
+    const pts = effPts();
+    const af=new Float64Array(NT), vf=new Float64Array(NT),
+          hf=new Float64Array(NT), fin=new Float64Array(NT), tit=new Float64Array(NT);
+    const cur=new Int32Array(NT), nxt=new Int32Array(NT);
+    for(let s=0;s<N;s++){
+      for(let i=0;i<NT;i++) cur[i]=i;
+      let len=NT;
+      while(len>1){
+        const half=len>>1;
+        for(let m=0;m<half;m++){
+          const a=cur[2*m], b=cur[2*m+1];
+          const ea = 1/(1+Math.exp(LN10*(pts[b]-pts[a])/DIV));
+          nxt[m] = Math.random()<ea ? a : b;
+        }
+        for(let m=0;m<half;m++) cur[m]=nxt[m];
+        len=half;
+        const arr = half===16?af : half===8?vf : half===4?hf : half===2?fin : tit;
+        for(let m=0;m<half;m++) arr[cur[m]]++;
+      }
+    }
+    const out=[];
+    for(let i=0;i<NT;i++) out.push({
+      i, af:af[i]/N*100, vf:vf[i]/N*100, hf:hf[i]/N*100, fin:fin[i]/N*100, tit:tit[i]/N*100
+    });
+    return out;
+  }
+
+  // ---- Einzel: ein Turnier, voller Verlauf inkl. Spiel um Platz 3 ----
+  // ===== Ergebnis-Modell: plausibler Score zu gegebener Elo-Siegquote =====
+  // Datenbasis: 1052 WM-Spiele. Sieger bleibt hart über Elo (Quoten exakt),
+  // nur der Score wird per Poisson drangehängt, konditioniert auf den Sieger.
+  const MU=2.7;                 // erwartete Gesamttore/Spiel (90 Min, moderne Ära)
+  const PK=11;                  // Tor-Obergrenze für pmf-Summen
+  const SCALE=1.62677;          // eicht Phasen-Rate auf 33,5% K.o.-Schnitt
+  const PEN=21.3/33.5;          // Anteil Elfmeterschießen an "über 90 hinaus"
+  const REMIS_B=[0,1,2,3], REMIS_W=[0.36,0.43,0.16,0.05]; // Remis-Stände (Daten)
+
+  function poissonPmf(lam){
+    const a=new Array(PK); a[0]=Math.exp(-lam);
+    for(let k=1;k<PK;k++) a[k]=a[k-1]*lam/k;
+    return a;
+  }
+  function poissonSample(lam){
+    const L=Math.exp(-lam); let k=0, pr=1;
+    do{ k++; pr*=Math.random(); } while(pr>L);
+    return k-1;
+  }
+  function pick(vals, ws){
+    let u=Math.random();
+    for(let i=0;i<vals.length;i++){ u-=ws[i]; if(u<0) return vals[i]; }
+    return vals[vals.length-1];
+  }
+  // Favoriten-Toranteil s, so dass bedingtes Poisson die Siegquote p (>=.5) trifft
+  function condWinProb(s){
+    const pf=poissonPmf(MU*s), pu=poissonPmf(MU*(1-s));
+    let PF=0,PU=0;
+    for(let i=0;i<PK;i++) for(let j=0;j<PK;j++){
+      if(i>j) PF+=pf[i]*pu[j]; else if(i<j) PU+=pf[i]*pu[j];
+    }
+    return PF/(PF+PU);
+  }
+  function sForP(p){
+    if(Math.abs(p-0.5)<1e-9) return 0.5;
+    if(p<0.5) return 1-sForP(1-p);
+    let lo=0.5, hi=0.9999;
+    for(let i=0;i<50;i++){ const m=(lo+hi)/2; if(condWinProb(m)<p) lo=m; else hi=m; }
+    return (lo+hi)/2;
+  }
+  // reguläres Ergebnis: bedingtes Poisson, gibt [Sieger-Tore, Verlierer-Tore]
+  function scoreReg(favWins, lamF, lamU){
+    for(let it=0; it<80; it++){
+      const gF=poissonSample(lamF), gU=poissonSample(lamU);
+      if(gF===gU) continue;
+      if((gF>gU)===favWins) return favWins ? [gF,gU] : [gU,gF];
+    }
+    return [1,0];
+  }
+  function scoreAet(){ const r=pick(REMIS_B,REMIS_W); return [r+(Math.random()<0.78?1:2), r]; }
+  function scorePen(){ const w=pick([3,4,5],[0.42,0.40,0.18]), d=pick([1,2,3],[0.55,0.34,0.11]);
+    return [w, Math.max(0,w-d)]; }
+
+  // Ein K.o.-Spiel: Elo bestimmt Quote, Phase+Score werden plausibel gezogen
+  function playMatch(ia, ib, pts){
+    const ea = 1/(1+Math.exp(LN10*(pts[ib]-pts[ia])/DIV));  // P(a gewinnt)
+    const aFav = ea>=0.5;
+    const iFav = aFav?ia:ib, iUnd = aFav?ib:ia;
+    const p = aFav?ea:1-ea;                                 // Favoriten-Quote >=.5
+    const s = sForP(p), lamF=MU*s, lamU=MU*(1-s);
+    const pf=poissonPmf(lamF), pu=poissonPmf(lamU);
+    let rem=0; for(let k=0;k<PK;k++) rem+=pf[k]*pu[k];
+    const over=Math.min(0.55, rem*SCALE);
+    const Preg=1-over, Paet=over*(1-PEN), Ppen=over*PEN, base=Preg+Paet;
+    let q=(p-0.5*Ppen)/base, qpen=0.5;
+    if(q>1){ q=1; qpen=(p-base)/Ppen; }                     // Elfer-Verfeinerung
+    const u=Math.random();
+    const phase = u<Preg?'reg':(u<Preg+Paet?'aet':'pen');
+    const favWins = (phase==='pen') ? (Math.random()<qpen) : (Math.random()<q);
+    const iW = favWins?iFav:iUnd, iL = favWins?iUnd:iFav;
+    const sc = phase==='reg' ? scoreReg(favWins,lamF,lamU)
+             : phase==='aet' ? scoreAet() : scorePen();
+    return {a:ia, b:ib, w:iW, l:iL, phase, sw:sc[0], sl:sc[1]};
+  }
+
+  function runOnce(){
+    const pts = effPts();
+    let cur = TEAMS.map((_,i)=>i);
+    const rounds=[];
+    while(cur.length>1){
+      const ms=[], win=[];
+      for(let m=0;m<cur.length;m+=2){
+        const res = playMatch(cur[m], cur[m+1], pts);
+        ms.push(res); win.push(res.w);
+      }
+      rounds.push(ms); cur=win;
+    }
+    const champ = cur[0];
+    const finalM = rounds[rounds.length-1][0];
+    const vize = finalM.l;
+    const hfR = rounds[rounds.length-2];          // 2 Halbfinals
+    const l1=hfR[0].l, l2=hfR[1].l;
+    const third3 = playMatch(l1, l2, pts);        // Spiel um Platz 3
+    return {rounds, champ, vize, third:third3.w, fourth:third3.l, l1, l2, finalM, third3};
+  }
+
+  // ---------- Rendering ----------
+  const $ = id => document.getElementById(id);
+
+  // ---- Info-Erklärungen (Popups) ----
+  const INFO = {
+    div:{t:"Divisor", h:`<p>Steuert über die Elo-Logik, wie stark der Punkteunterschied zweier Teams die Siegchance bestimmt.</p><p><b>Links (klein, bis 300):</b> schärfer — schon kleine Vorsprünge machen den Favoriten fast unschlagbar.<br><b>Rechts (groß, bis 800):</b> ausgeglichener — auch Außenseiter haben realistische Chancen.</p><p>P(A&nbsp;schlägt&nbsp;B) = 1 / (1 + 10^((P<sub>B</sub>−P<sub>A</sub>)/Divisor)). Bei 600 ergibt ein Vorsprung von 600&nbsp;Punkten rund 91&nbsp;% Siegchance, bei 300 schon ~99&nbsp;%.</p>`},
+    home:{t:"Heimvorteil", h:`<p>Die Gastgeber <b>USA, Kanada und Mexiko</b> bekommen einen Bonus auf ihre Weltranglisten-Punkte, um den Heimvorteil abzubilden.</p><p>Der Regler stellt die Höhe ein (0–150&nbsp;Punkte). Zur Einordnung: 75&nbsp;Punkte entsprechen etwa dem Abstand zwischen einem starken und einem mittleren Team.</p>`},
+    tf:{t:"Turnierfaktor", h:`<div class="iwarn">⚠ Statistisch <b>nicht</b> nachweisbar (I²&nbsp;=&nbsp;0&nbsp;%, p&nbsp;=&nbsp;0,54). Reines „Was wäre, wenn die Punktschätzungen doch etwas bedeuten“. Nur die 19&nbsp;Teams mit ≥&nbsp;5 WM-Teilnahmen erhalten einen Wert; die übrigen 13 bleiben ohne Bonus.</div><p>Der Faktor misst, wie stark ein Team in seinen WM-Spielen vom <b>Elo-Erwartungswert</b> abwich (Elfmeterschießen elo-neutral). Positiv = lief im Turnier über der eigenen Spielstärke; der Wert wird als Elo-Bonus eingerechnet.</p><div class="fp-title">Turnierfaktor je Team · 95 %-Intervalle</div><div id="fpHost"></div><p>Jedes Intervall kreuzt die Null, der gepoolte Effekt (Raute) liegt praktisch bei null — <b>kein nachweisbarer Turnier-Effekt</b>. Deshalb nur ein An/Aus-Schalter, keine Feinregelung.</p>`},
+    tabs:{t:"Die zwei Ansichten", h:`<p><b>Wahrscheinlichkeiten:</b> Aus zehntausenden simulierten Turnieren wird gezählt, wie oft jedes Team welche Runde erreicht — als Prozent. <b>AF</b>&nbsp;Achtelfinale, <b>VF</b>&nbsp;Viertelfinale, <b>HF</b>&nbsp;Halbfinale, <b>F</b>&nbsp;Finale, <b>WM</b>&nbsp;Titel. Die statistische Gesamtsicht über alle Läufe.</p><p><b>Ein mögliches Turnier:</b> Es wird genau <b>ein</b> Turnier ausgelost und der komplette K.-o.-Baum mit konkreten Ergebnissen gezeigt — ein einzelnes Beispiel, wie die WM ablaufen könnte. Jedes Würfeln liefert ein neues.</p>`}
+  };
+  const imodal=$("imodal"), imodalTitle=$("imodalTitle"), imodalBody=$("imodalBody");
+  function openInfo(key){
+    const it=INFO[key]; if(!it) return;
+    imodalTitle.textContent=it.t; imodalBody.innerHTML=it.h;
+    imodal.classList.add("on");
+    if(key==="tf"){ const fh=$("fpHost"); if(fh) fh.innerHTML=buildForestSVG(); }
+  }
+  function closeInfo(){ imodal.classList.remove("on"); }
+  document.querySelectorAll(".ibtn").forEach(btn=>btn.addEventListener("click",()=>openInfo(btn.dataset.info)));
+  const probList=$("probList"), probStatus=$("probStatus");
+
+  function funnelBar(d){
+    // verschachtelte Runden als gestufter Balken: gold(WM) -> aussen dunkler(AF)
+    const seq=[[d.tit,'#f4c64a'],[d.fin,'#6e9bf0'],[d.hf,'#46639a'],[d.vf,'#33486e'],[d.af,'#243450']];
+    let parts=[];
+    for(let i=0;i<seq.length;i++){
+      const start = i===0 ? 0 : seq[i-1][0];
+      parts.push(`${seq[i][1]} ${start}% ${seq[i][0]}%`);
+    }
+    parts.push(`#141f33 ${d.af}%`);
+    return `<span class="fbar" style="background:linear-gradient(90deg,${parts.join(',')})"></span>`;
+  }
+
+  function renderProb(data, ms){
+    data.sort((a,b)=> b.tit - a.tit);
+    const code = nameMode==='code';
+    let html = `<div class="phead"><span class="pf"></span><span class="pteam"></span>`
+      + `<span class="pcol">AF</span><span class="pcol">VF</span><span class="pcol">HF</span>`
+      + `<span class="pcolf">F</span><span class="pwm">WM</span><span class="pfunnel"></span></div>`;
+    data.forEach((d,rank)=>{
+      const t=TEAMS[d.i], top=rank<4?' top':'';
+      html += `<div class="prow${top}"><span class="pf">${t.f}</span>`
+        + `<span class="pteam">${code?t.c:t.n}</span>`
+        + `<span class="pcol">${d.af.toFixed(0)}</span><span class="pcol">${d.vf.toFixed(0)}</span>`
+        + `<span class="pcol">${d.hf.toFixed(0)}</span><span class="pcolf">${d.fin.toFixed(1)}</span>`
+        + `<span class="pwm">${d.tit.toFixed(1)}</span>`
+        + `<span class="pfunnel">${funnelBar(d)}</span></div>`;
+    });
+    probList.innerHTML = html;
+    probList.className = 'rowlist ' + (code ? 'mode-c' : 'mode-n');
+    probStatus.textContent = `${NRUN.toLocaleString("de-DE")} Turniere · ${(NRUN*31/1e6).toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1})} Mio. Spiele · Divisor ${DIV}`
+      + (HOME_ON?` · Heimvorteil +${HOME_BONUS}`:``)
+      + (TF_ON?` · Turnierfaktor ${Math.round(TF_STR*100)}%`:``) + ` · ${ms.toFixed(0)} ms`;
+  }
+
+  let pending=false;
+  function recompute(){
+    if(pending) return;
+    pending=true;
+    probStatus.textContent = `Simuliere ${NRUN.toLocaleString("de-DE")} Turniere …`;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const t0=performance.now();
+      const data=runMany(NRUN);
+      const ms=performance.now()-t0;
+      lastProb={data, ms};
+      renderProb(data, ms);
+      pending=false;
+    }));
+  }
+
+  const RLAB=["Letzte 32","Achtelf.","Viertelf.","Halbf.","Finale"];
+  const RCOUNT=[16,8,4,2,1];
+  let tzoom=1.0;
+
+  // Spaltenbreiten so berechnen, dass alle 5 Runden in die Bildschirmbreite passen
+  function layoutTree(){
+    const wrap=$("treeWrap"), tree=$("tree");
+    const availW = wrap.clientWidth - 14;          // wrap-padding (7*2)
+    const GAP=6, gapsTotal=4*GAP;                   // 4 Lücken zwischen 5 Spalten
+    const colW = Math.max(50, Math.floor((availW - gapsTotal) / 5));
+    tree.style.setProperty("--colw", colW+"px");
+  }
+
+  function tslot(idx, isWin, goals, phase){
+    const t=TEAMS[idx];
+    let g='';
+    if(goals!==null && goals!==undefined){
+      const dg = goals>=10 ? 9 : goals;                       // einstellig halten
+      const over = phase && phase!=='reg';                    // Spiel ging über 90
+      let mk='', mkc='';                                      // nur bei Verlängerung/Elfer ein Kürzel
+      if(isWin && over){ mk = phase==='pen'?'n.E.':'n.V.'; mkc='tmo'; }
+      g = `<span class="tg">${dg}</span><span class="tm ${mkc}">${mk}</span>`;
+    }
+    return `<div class="tslot ${isWin?'win':'lose'}"><span class="tf">${t.f}</span>`
+      + `<span class="tn">${teamLabel(t)}</span>${g}</div>`;
+  }
+
+  function renderTree(sim){
+    const c=TEAMS[sim.champ];
+    $("tree").classList.toggle('codemode', nameMode==='code');
+    let html='<svg class="tlines"></svg>';
+    for(let r=0;r<5;r++){
+      const isFin = r===4;
+      html += `<div class="tcol c${r}${isFin?' finalcol':''}">`
+        + `<div class="tlabel">${RLAB[r]}</div>`;
+      if(isFin) html += `<div class="finalwrap">`;
+      for(let p=0;p<RCOUNT[r];p++){
+        const m=sim.rounds[r][p];
+        const show = scoresVisible();
+        const ga = m.w===m.a ? m.sw : m.sl;
+        const gb = m.w===m.b ? m.sw : m.sl;
+        html += `<div class="mbox" data-r="${r}" data-p="${p}">`
+          + tslot(m.a, m.w===m.a, show?ga:null, m.phase)
+          + tslot(m.b, m.w===m.b, show?gb:null, m.phase) + `</div>`;
+      }
+      if(isFin){
+        html += `<div class="champbox"><div class="cuptag">Weltmeister</div>`
+          + `<span class="cup2">🏆</span>`
+          + `<span class="cn"><span class="cf">${c.f}</span>${teamLabel(c)}</span></div></div>`;
+      }
+      html += `</div>`;
+    }
+    $("tree").innerHTML = html;
+    layoutTree();
+    applyTreeZoom();
+    requestAnimationFrame(drawTreeLines);
+    renderFinish(sim);
+  }
+
+  function boxRect(tree, base, z, r, p){
+    const el = tree.querySelector(`.mbox[data-r="${r}"][data-p="${p}"]`);
+    if(!el) return null;
+    const b = el.getBoundingClientRect();
+    return {l:(b.left-base.left)/z, r:(b.right-base.left)/z, t:(b.top-base.top)/z, h:b.height/z};
+  }
+
+  function drawTreeLines(){
+    const tree=$("tree"); const svg=tree.querySelector("svg.tlines");
+    if(!svg) return;
+    const z=tzoom; const base=tree.getBoundingClientRect();
+    const W=tree.offsetWidth, H=tree.offsetHeight;
+    svg.setAttribute("viewBox",`0 0 ${W} ${H}`); svg.setAttribute("width",W); svg.setAttribute("height",H);
+    let paths="";
+    for(let r=0;r<4;r++){
+      for(let p=0;p<RCOUNT[r];p++){
+        const a=boxRect(tree,base,z,r,p), par=boxRect(tree,base,z,r+1,Math.floor(p/2));
+        if(!a||!par) continue;
+        const sx=a.r, sy=a.t+a.h/2, dx=par.l, dy=par.t+par.h/2, mx=(sx+dx)/2;
+        paths += `<path d="M${sx} ${sy} H${mx} V${dy} H${dx}" fill="none" stroke="#2a3a5e" stroke-width="1.4"/>`;
+      }
+    }
+    const fin=boxRect(tree,base,z,4,0), cEl=tree.querySelector(".champbox");
+    if(fin && cEl){
+      const cb=cEl.getBoundingClientRect();
+      const cx=(cb.left-base.left)/z + (cb.width/z)/2;   // Mitte der Champion-Box
+      const cy=(cb.top-base.top)/z;                       // Oberkante Champion-Box
+      const fx=fin.l + (fin.r-fin.l)/2;                   // Mitte des Finale-Matches
+      const fyB=fin.t+fin.h;                              // Unterkante Finale-Match
+      paths += `<path d="M${fx} ${fyB} V${cy}" fill="none" stroke="var(--gold)" stroke-width="1.6"/>`;
+    }
+    svg.innerHTML=paths;
+  }
+
+  function applyTreeZoom(){
+    const tree=$("tree"), zEl=$("treeZoom");
+    tree.style.transform = tzoom===1 ? "none" : `scale(${tzoom})`;
+    zEl.style.width  = (tree.offsetWidth*tzoom)+"px";
+    zEl.style.height = (tree.offsetHeight*tzoom)+"px";
+  }
+
+  function frow(pos,idx,gold){
+    const t=TEAMS[idx];
+    return `<div class="frow${gold?' gold':''}"><span class="fp">${pos}</span>`
+      + `<span class="ff">${t.f}</span><span class="fn">${teamLabel(t)}</span></div>`;
+  }
+  function renderFinish(sim){
+    $("singleFinish").innerHTML = `<div class="cup">🏆</div>`
+      + `<div class="finish"><div class="ft">Endstand</div>`
+      + frow(1,sim.champ,true) + frow(2,sim.vize,false)
+      + frow(3,sim.third,false) + frow(4,sim.fourth,false) + `</div>`;
+  }
+
+  // ---------- UI-Verdrahtung ----------
+  function setFill(el){
+    const min=+el.min, max=+el.max, v=+el.value;
+    el.style.setProperty("--fill", ((v-min)/(max-min)*100)+"%");
+  }
+
+  const divSld=$("divSld"), divVal=$("divVal");
+  divSld.addEventListener("input",()=>{ DIV=+divSld.value; divVal.textContent=DIV; setFill(divSld);
+    recompute(); });
+
+  const homeTog=$("homeTog"), homeSld=$("homeSld"), homeHint=$("homeHint");
+  function homeUpdate(){
+    HOME_ON=homeTog.checked; HOME_BONUS=+homeSld.value;
+    homeSld.disabled=!HOME_ON;
+    homeHint.textContent = HOME_ON ? `+${HOME_BONUS}` : "aus";
+    setFill(homeSld); recompute();
+  }
+  homeTog.addEventListener("change",homeUpdate);
+  homeSld.addEventListener("input",homeUpdate);
+
+  // ----- Turnierfaktor -----
+  const tfTog=$("tfTog");
+  function tfUpdate(){ TF_ON=tfTog.checked; recompute(); }   // feste Stärke 100 %, nur an/aus
+  tfTog.addEventListener("change",tfUpdate);
+
+  // Forest-Plot (19 belastbare Teams), als SVG im App-Stil
+  const TF_DATA=[
+    {n:"Kroatien",v:0.56,se:0.412},{n:"Belgien",v:0.51,se:0.292},
+    {n:"Argentinien",v:0.48,se:0.415},{n:"Frankreich",v:0.47,se:0.475},
+    {n:"Deutschland",v:0.40,se:0.336},{n:"Niederlande",v:0.35,se:0.424},
+    {n:"Marokko",v:0.30,se:0.522},{n:"Paraguay",v:0.20,se:0.202},
+    {n:"Schweiz",v:0.18,se:0.212},{n:"Brasilien",v:0.17,se:0.47},
+    {n:"Mexiko",v:0.06,se:0.197},{n:"Kolumbien",v:-0.05,se:0.395},
+    {n:"Schweden",v:-0.06,se:0.545},{n:"Australien",v:-0.09,se:0.272},
+    {n:"Spanien",v:-0.12,se:0.228},{n:"Japan",v:-0.14,se:0.339},
+    {n:"Portugal",v:-0.19,se:0.252},{n:"England",v:-0.32,se:0.262},
+    {n:"USA",v:-0.36,se:0.211}
+  ];
+  function esc(s){return s;}
+  function buildForestSVG(){
+    const W=336, padL=84, padR=30, plotW=W-padL-padR;
+    const rowH=14, top=5, n=TF_DATA.length;
+    const diaY=top+n*rowH+12, H=diaY+16;
+    const xmin=-0.75, xmax=0.75;
+    const xs=v=> padL + (Math.max(xmin,Math.min(xmax,v))-xmin)/(xmax-xmin)*plotW;
+    const xc=v=> padL + (v-xmin)/(xmax-xmin)*plotW; // ungeklemmt, fürs Mittel
+    const x0=xs(0);
+    const ws=TF_DATA.map(d=>1/(d.se*d.se));
+    const wmin=Math.min(...ws), wmax=Math.max(...ws);
+    let s=`<svg class="fpsvg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+    s+=`<line x1="${x0}" y1="${top-2}" x2="${x0}" y2="${diaY+5}" stroke="#9fb0d6" stroke-width="1" stroke-dasharray="3 3" opacity="0.65"/>`;
+    [-0.5,0,0.5].forEach(t=>{ s+=`<text x="${xc(t)}" y="${H-2}" fill="#9fb0d6" font-size="8" text-anchor="middle">${t>0?'+':''}${t}</text>`; });
+    TF_DATA.forEach((d,i)=>{
+      const y=top+i*rowH+rowH/2;
+      const lo=xs(d.v-2*d.se), hi=xs(d.v+2*d.se);
+      const r=2.3+(1/(d.se*d.se)-wmin)/(wmax-wmin)*3.0;
+      s+=`<text x="${padL-5}" y="${y+3}" fill="#e7edff" font-size="9" text-anchor="end">${d.n}</text>`;
+      s+=`<line x1="${lo}" y1="${y}" x2="${hi}" y2="${y}" stroke="#5a6a8e" stroke-width="1.2"/>`;
+      s+=`<circle cx="${xs(d.v)}" cy="${y}" r="${r.toFixed(1)}" fill="#6e9bf0" stroke="#0f1830" stroke-width="0.8"/>`;
+      s+=`<text x="${W-2}" y="${y+3}" fill="#9fb0d6" font-size="8" text-anchor="end">${d.v>0?'+':''}${d.v.toFixed(2)}</text>`;
+    });
+    const gv=0.047, gse=0.066, dc=xc(gv), dl=xc(gv-2*gse), dr=xc(gv+2*gse), dh=4;
+    s+=`<polygon points="${dl},${diaY} ${dc},${diaY-dh} ${dr},${diaY} ${dc},${diaY+dh}" fill="#f4c64a" stroke="#0f1830" stroke-width="0.8"/>`;
+    s+=`<text x="${padL-5}" y="${diaY+3}" fill="#f4c64a" font-size="8.5" font-weight="700" text-anchor="end">Gepoolt</text>`;
+    s+=`</svg>`;
+    return s;
+  }
+
+
+
+  $("imodalX").addEventListener("click",closeInfo);
+  imodal.addEventListener("click",e=>{ if(e.target===imodal) closeInfo(); });
+
+  $("simBtn").addEventListener("click", recompute);
+
+  // Tabs
+  const tabProb=$("tabProb"), tabSingle=$("tabSingle");
+  const viewProb=$("viewProb"), viewSingle=$("viewSingle");
+  let rolledOnce=false;
+  function showTab(which){
+    const p = which==="prob";
+    tabProb.classList.toggle("on",p); tabSingle.classList.toggle("on",!p);
+    viewProb.classList.toggle("on",p); viewSingle.classList.toggle("on",!p);
+    if(!p && !rolledOnce){ rolledOnce=true; requestAnimationFrame(roll); }
+  }
+  tabProb.addEventListener("click",()=>showTab("prob"));
+  tabSingle.addEventListener("click",()=>showTab("single"));
+
+  function roll(){ lastSim = runOnce(); renderTree(lastSim); }
+  $("rollBtn").addEventListener("click",roll);
+
+  // Zoom Turnierbaum (100% = passt komplett; höher = Details, scrollbar)
+  const tzSld=$("tzSld");
+  function setTZoom(v){
+    tzoom = Math.max(0.60, Math.min(2.20, v));
+    tzSld.value = Math.round(tzoom*100);
+    setFill(tzSld); applyTreeZoom();
+    requestAnimationFrame(drawTreeLines);
+  }
+  tzSld.addEventListener("input", ()=> setTZoom(+tzSld.value/100));
+  $("tzIn").addEventListener("click", ()=> setTZoom(tzoom+0.15));
+  $("tzOut").addEventListener("click", ()=> setTZoom(tzoom-0.15));
+
+  // Bei Größenänderung (Drehung) Spalten neu einpassen
+  let rsz;
+  window.addEventListener("resize", ()=>{
+    clearTimeout(rsz);
+    rsz = setTimeout(()=>{ if($("tree").children.length){ layoutTree(); applyTreeZoom();
+      requestAnimationFrame(drawTreeLines); } }, 150);
+  });
+
+  // Namensanzeige umschalten (beide Toggle-Instanzen synchron, kein Neu-Rechnen)
+  function setNameMode(m){
+    if(m===nameMode) return;
+    nameMode = m;
+    document.querySelectorAll(".nmtog button").forEach(b=>
+      b.classList.toggle("on", b.dataset.mode===m));
+    if(lastProb) renderProb(lastProb.data, lastProb.ms);
+    if(lastSim)  renderTree(lastSim);
+  }
+  document.querySelectorAll(".nmtog").forEach(g=>
+    g.addEventListener("click", e=>{
+      const b=e.target.closest("button"); if(!b) return;
+      setNameMode(b.dataset.mode);
+    }));
+
+  // Init
+  setFill(divSld); setFill(homeSld); setFill(tzSld);
+  recompute();
+})();
+[[SCRIPTEND]]
+</body>
+</html>
+</script>
+  <script>
+  (function(){
+    "use strict";
+    var fb=document.getElementById('fb'), fs=document.getElementById('fs');
+    var loaded={b:false,s:false};
+    function unesc(s){ return s.replace(/\[\[SCRIPTEND\]\]/g, '</'+'script>'); }
+    function load(w){
+      if(w==='b' && !loaded.b){ fb.srcdoc=unesc(document.getElementById('srcB').textContent); loaded.b=true; }
+      if(w==='s' && !loaded.s){ fs.srcdoc=unesc(document.getElementById('srcS').textContent); loaded.s=true; }
+    }
+    function show(w){
+      load(w);
+      fb.classList.toggle('hidden', w!=='b');
+      fs.classList.toggle('hidden', w!=='s');
+      var tabs=document.querySelectorAll('.swtab');
+      for(var i=0;i<tabs.length;i++){ tabs[i].classList.toggle('active', tabs[i].dataset.v===w); }
+    }
+    var tabs=document.querySelectorAll('.swtab');
+    for(var i=0;i<tabs.length;i++){ tabs[i].addEventListener('click', (function(t){ return function(){ show(t.dataset.v); }; })(tabs[i])); }
+    load('b'); // K.o.-Runde sofort, Simulation erst bei Bedarf
+  })();
+  </script>
 </body>
 </html>
