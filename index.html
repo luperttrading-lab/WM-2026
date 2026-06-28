@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+<title>WM 2026 – K.o.-Runde</title>
+<style>
+  :root{
+    --bg1:#0a1330; --bg2:#16245e; --bg3:#0c1740;
+    --card:rgba(255,255,255,.05);
+    --card-bd:var(--line);
+    --slot:rgba(255,255,255,.04);
+    --gold:#f4c64a; --gold-d:#d9a521;
+    --line:rgba(160,190,255,.62);
+    --line-win:rgba(128,172,255,.95);
+    --txt:#eef2ff; --muted:#8190c4;
+    --row-h:32px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:#0a1330;}
+  /* echte dunkle Grundfläche als unterste Ebene (iOS-Dark-Mode-robust) */
+  .bg{position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #243a86 0%, var(--bg2) 38%, var(--bg1) 78%, var(--bg3) 100%);}
+  .app{position:relative; z-index:1; min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    color:var(--txt); padding:10px 10px;
+    padding-top:calc(14px + env(safe-area-inset-top));
+    padding-bottom:calc(48px + env(safe-area-inset-bottom));}
+
+  header{text-align:center; margin:6px 0 14px;}
+  header .k{font-size:13px; letter-spacing:.32em; font-weight:700; color:var(--gold);
+    text-transform:uppercase; opacity:.92;}
+  header h1{margin:2px 0 0; font-size:30px; font-weight:800; letter-spacing:.06em;
+    text-transform:uppercase; line-height:1;
+    background:linear-gradient(180deg,#fff 0%,#cdd8ff 100%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  header .hr{width:140px; height:2px; margin:11px auto 0;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+
+  .toolbar{display:flex; align-items:center; justify-content:center; gap:10px;
+    flex-wrap:wrap; margin-bottom:12px;}
+  .hint{font-size:12px; color:var(--muted); text-align:center;}
+  .btn{appearance:none; border:1px solid var(--card-bd); background:var(--card);
+    color:var(--txt); font-size:12.5px; font-weight:600; padding:7px 13px;
+    border-radius:9px; cursor:pointer; letter-spacing:.02em;}
+  .btn:active{background:rgba(255,255,255,.12);}
+  .zoom{position:fixed; left:0; right:0; bottom:0; z-index:40;
+    display:flex; align-items:center; gap:11px;
+    padding:4px 15px; padding-bottom:calc(4px + env(safe-area-inset-bottom));
+    background:rgba(9,16,40,.94); -webkit-backdrop-filter:blur(10px);
+    backdrop-filter:blur(10px); border-top:1px solid var(--card-bd);}
+  .zbtn{appearance:none; flex:0 0 auto; width:22px; height:22px; border:none;
+    background:transparent; color:var(--muted); font-size:18px; font-weight:700;
+    line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    padding:0; -webkit-user-select:none; user-select:none; touch-action:manipulation;}
+  .zbtn:active{color:var(--txt);}
+  .zrange{flex:1 1 auto; height:22px; margin:0; padding:0; background:transparent;
+    -webkit-appearance:none; appearance:none; cursor:pointer; touch-action:manipulation;
+    --fill:50%;}
+  .zrange::-webkit-slider-runnable-track{height:4px; border-radius:3px;
+    background:linear-gradient(90deg, rgba(128,172,255,.92) var(--fill), rgba(255,255,255,.15) var(--fill));}
+  .zrange::-webkit-slider-thumb{-webkit-appearance:none; appearance:none;
+    width:18px; height:18px; margin-top:-7px; border-radius:50%;
+    background:#dde5ff; box-shadow:0 1px 4px rgba(0,0,0,.55);}
+  .zrange::-moz-range-track{height:4px; border-radius:3px; background:rgba(255,255,255,.15);}
+  .zrange::-moz-range-progress{height:4px; border-radius:3px; background:rgba(128,172,255,.92);}
+  .zrange::-moz-range-thumb{width:18px; height:18px; border:none; border-radius:50%;
+    background:#dde5ff;}
+
+  .scroll{overflow:auto; -webkit-overflow-scrolling:touch; padding:6px 4px 10px;
+    border-radius:14px;}
+  .zoomer{position:relative;}
+  .bracket{position:relative; display:flex; align-items:stretch; gap:20px;
+    width:max-content; padding-top:24px; transform-origin:top left;}
+
+  svg.lines{position:absolute; top:0; left:0;
+    pointer-events:none; z-index:0; overflow:visible;}
+
+  .round{position:relative; z-index:1; display:flex; flex-direction:column;
+    justify-content:space-around; flex:0 0 auto;}
+  .round.r0{gap:4px;}
+  .round.r0,.round.r1,.round.r2,.round.r3,.round.r4{width:258px;}
+  .round.champ{width:182px; justify-content:center;}
+
+  .rlabel{position:absolute; top:-22px; left:0; right:0; text-align:center;
+    font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+    font-weight:700; color:var(--gold); white-space:nowrap;}
+
+  .match{display:flex; flex-direction:row; align-items:center;
+    padding:0 8px; position:relative; flex:0 0 auto;}
+
+  /* Datum / Uhrzeit vor der Paarung */
+  .dt{flex:0 0 auto; width:46px; display:flex; flex-direction:column;
+    align-items:center; gap:1px; margin-right:8px;}
+  .dt input{width:100%; background:transparent; border:none; padding:1px 0;
+    text-align:center; font-family:inherit; line-height:1.1; cursor:text;
+    border-radius:4px; -webkit-appearance:none;}
+  .dt input.d{font-size:11px; color:var(--muted); font-weight:600;}
+  .dt input.t{font-size:13.5px; color:var(--txt); font-weight:700;
+    letter-spacing:.2px; font-variant-numeric:tabular-nums;}
+  .dt input::placeholder{color:var(--muted); opacity:.55;}
+  .dt input:focus{outline:none; background:rgba(160,190,255,.16);}
+
+  .pair{flex:1 1 auto; border:1.6px solid var(--card-bd); border-radius:9px;
+    overflow:hidden; background:var(--card); backdrop-filter:blur(2px);}
+  .slot{display:flex; align-items:center; gap:7px; height:var(--row-h);
+    padding:0 7px; cursor:pointer; font-size:12px; line-height:1;
+    border-bottom:1px solid var(--line);
+    transition:background .12s;}
+  .slot:last-child{border-bottom:0;}
+  .slot:active{background:rgba(255,255,255,.10);}
+  .slot .flag{font-size:15px; width:19px; text-align:center; flex:0 0 auto;}
+  .slot .nm{flex:1 1 auto; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; font-weight:600;}
+  .slot .score{flex:0 0 auto; width:26px; height:22px; margin-left:5px;
+    border:1px solid var(--card-bd); border-radius:5px;
+    background:rgba(8,14,40,.55); color:var(--txt);
+    font-size:13px; font-weight:700; text-align:center; padding:0;
+    font-family:inherit; -webkit-appearance:none;}
+  .slot .score:focus{outline:none; border-color:var(--gold);
+    background:rgba(244,198,74,.12);}
+  .slot .score:disabled{opacity:.3;}
+  .slot.empty{color:var(--muted); cursor:default; font-style:italic; font-weight:500;}
+  .slot.empty:active{background:transparent;}
+  .slot.win{background:rgba(86,134,238,.34); box-shadow:inset 3px 0 0 var(--line-win);}
+  .slot.win .nm{font-weight:800; color:#eff3ff;}
+  .slot.win .score{background:rgba(110,155,240,.34); color:var(--txt);
+    border-color:rgba(150,185,255,.55);}
+  .slot.loser{opacity:.45;}
+
+  /* Champion */
+  .champ-box{margin:0 11px; text-align:center;}
+  .cup{font-size:46px; line-height:1; filter:drop-shadow(0 4px 10px rgba(244,198,74,.35));}
+  .champ-card{margin-top:8px; border:1.5px solid var(--gold); border-radius:11px;
+    padding:11px 10px; background:linear-gradient(180deg,rgba(244,198,74,.16),rgba(244,198,74,.04));}
+  .champ-card .ttl{font-size:10px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--gold); font-weight:700;}
+  .champ-card .who{margin-top:6px; font-size:16px; font-weight:800; min-height:20px;
+    display:flex; align-items:center; justify-content:center; gap:8px;}
+  .champ-card .who.ph{color:var(--muted); font-size:13px; font-weight:600;}
+
+  /* Spiel um Platz 3 */
+  .third{margin:26px auto 0; max-width:380px; text-align:center;}
+  .third .th{font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    font-weight:700; color:var(--gold); margin-bottom:9px;}
+  .third .pair{max-width:300px; margin:0 auto;}
+  .third .dtrow{display:flex; gap:8px; justify-content:center; align-items:baseline;
+    margin:0 auto 10px;}
+  .third .dtrow input{background:transparent; border:none; text-align:center;
+    font-family:inherit; cursor:text; border-radius:4px; padding:1px 2px;
+    -webkit-appearance:none;}
+  .third .dtrow input.d{font-size:12px; color:var(--muted); font-weight:600; width:62px;}
+  .third .dtrow input.t{font-size:14px; color:var(--txt); font-weight:700; width:56px;
+    letter-spacing:.2px; font-variant-numeric:tabular-nums;}
+  .third .dtrow input:focus{outline:none; background:rgba(160,190,255,.16);}
+  .third .note{font-size:11px; color:var(--muted); margin-top:8px;}
+
+  /* Confirm-Overlay (kein confirm()/alert()) */
+  .overlay{position:fixed; inset:0; z-index:50; display:none;
+    align-items:center; justify-content:center; padding:24px;
+    background:rgba(6,10,28,.72); backdrop-filter:blur(3px);}
+  .overlay.show{display:flex;}
+  .sheet{width:100%; max-width:300px; border:1px solid var(--card-bd);
+    border-radius:16px; padding:20px 18px;
+    background:linear-gradient(180deg,#1a2860,#121d49); text-align:center;}
+  .sheet h3{margin:0 0 6px; font-size:16px;}
+  .sheet p{margin:0 0 16px; font-size:13px; color:var(--muted); line-height:1.4;}
+  .sheet .row{display:flex; gap:10px;}
+  .sheet .btn{flex:1; justify-content:center; text-align:center;}
+  .btn.warn{background:linear-gradient(180deg,#e0563f,#c23a26); border-color:#e0563f; color:#fff;}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="app">
+  <header>
+    <div class="k">Die K.o.-Runde der</div>
+    <h1>WM 2026</h1>
+    <div class="hr"></div>
+  </header>
+
+  <div class="toolbar">
+    <div class="hint">Ergebnis eintippen — der Sieger rückt automatisch weiter.</div>
+  </div>
+
+  <div class="scroll" id="scroll">
+    <div class="zoomer" id="zoomer">
+      <div class="bracket" id="bracket">
+        <svg class="lines" id="lines"></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="third" id="third"></div>
+</div>
+
+<div class="zoom" id="zoomCtl">
+  <button class="zbtn" id="zoomOut" aria-label="kleiner">−</button>
+  <input type="range" class="zrange" id="zrange" min="40" max="160" step="5" value="100" aria-label="Zoom">
+  <button class="zbtn" id="zoomIn" aria-label="größer">+</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- Setzliste (32 Teams, aus den Original-Screenshots verifiziert) ----
+  // Reihenfolge = Paarungen: (1,2)(3,4)... -> 16 Sechzehntelfinal-Spiele
+  const TEAMS = [
+    {n:"Deutschland",   f:"🇩🇪"}, {n:"Paraguay",      f:"🇵🇾"},
+    {n:"Frankreich",    f:"🇫🇷"}, {n:"Schweden",      f:"🇸🇪"},
+    {n:"Südafrika",     f:"🇿🇦"}, {n:"Kanada",        f:"🇨🇦"},
+    {n:"Niederlande",   f:"🇳🇱"}, {n:"Marokko",       f:"🇲🇦"},
+    {n:"Portugal",      f:"🇵🇹"}, {n:"Kroatien",      f:"🇭🇷"},
+    {n:"Spanien",       f:"🇪🇸"}, {n:"Österreich",    f:"🇦🇹"},
+    {n:"USA",           f:"🇺🇸"}, {n:"Bosnien-Herz.", f:"🇧🇦"},
+    {n:"Belgien",       f:"🇧🇪"}, {n:"Senegal",       f:"🇸🇳"},
+    {n:"Brasilien",     f:"🇧🇷"}, {n:"Japan",         f:"🇯🇵"},
+    {n:"Elfenbeinküste",f:"🇨🇮"}, {n:"Norwegen",      f:"🇳🇴"},
+    {n:"Mexiko",        f:"🇲🇽"}, {n:"Ecuador",       f:"🇪🇨"},
+    {n:"England",       f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿"}, {n:"DR Kongo",      f:"🇨🇩"},
+    {n:"Argentinien",   f:"🇦🇷"}, {n:"Kap Verde",     f:"🇨🇻"},
+    {n:"Australien",    f:"🇦🇺"}, {n:"Ägypten",       f:"🇪🇬"},
+    {n:"Schweiz",       f:"🇨🇭"}, {n:"Algerien",      f:"🇩🇿"},
+    {n:"Kolumbien",     f:"🇨🇴"}, {n:"Ghana",         f:"🇬🇭"}
+  ];
+
+  const LABELS = ["Letzte 32","Achtelfinale","Viertelfinale","Halbfinale","Finale"];
+  const COUNTS = [16,8,4,2,1]; // Spiele pro Runde
+
+  // ---- State ----
+  // winner[r][p] = 0 (oben) | 1 (unten) | null
+  const winner = COUNTS.map(c => new Array(c).fill(null));
+  // scores[r][p] = [Tore oben, Tore unten]; dts[r][p] = [Datum, Uhrzeit]
+  const scores = COUNTS.map(c => Array.from({length:c}, () => ["",""]));
+  // Offizielle Termine WM 2026 (deutsche Zeit / MESZ), zugeordnet zur Bracket-Position.
+  // Runde 0 in Setzliste-Reihenfolge; Folgerunden über Sieger-Nummern zugeordnet u. mehrfach verifiziert.
+  const DTS = [
+    // Letzte 32 (Paarungen 0..15)
+    [["29.06.","22:30"],["30.06.","23:00"],["28.06.","21:00"],["30.06.","03:00"],
+     ["03.07.","01:00"],["02.07.","21:00"],["02.07.","02:00"],["01.07.","22:00"],
+     ["29.06.","19:00"],["30.06.","19:00"],["01.07.","03:00"],["01.07.","18:00"],
+     ["04.07.","00:00"],["03.07.","20:00"],["03.07.","05:00"],["04.07.","03:30"]],
+    // Achtelfinale (0..7)
+    [["04.07.","23:00"],["04.07.","19:00"],["06.07.","21:00"],["07.07.","02:00"],
+     ["05.07.","22:00"],["06.07.","02:00"],["07.07.","18:00"],["07.07.","22:00"]],
+    // Viertelfinale (0..3)
+    [["09.07.","22:00"],["10.07.","21:00"],["11.07.","23:00"],["12.07.","03:00"]],
+    // Halbfinale (0..1)
+    [["14.07.","21:00"],["15.07.","21:00"]],
+    // Finale
+    [["19.07.","21:00"]]
+  ];
+  const cloneDTS = () => DTS.map(rd => rd.map(m => [m[0], m[1]]));
+  const dts    = cloneDTS();
+  let third = null;        // 0|1|null – Sieger Spiel um Platz 3
+  let score3 = ["",""];    // Ergebnis Spiel um Platz 3
+  let dt3 = ["18.07.","23:00"];   // Datum/Uhrzeit Spiel um Platz 3
+  let zoom = 1;            // Zoomfaktor (+/- Tasten)
+
+  // Team in Slot (r,p,side)
+  function slotTeam(r,p,side){
+    if(r===0) return TEAMS[p*2+side];
+    const cp = p*2+side;
+    const w = winner[r-1][cp];
+    return w===null ? null : slotTeam(r-1,cp,w);
+  }
+  function loserTeam(r,p){
+    const w = winner[r][p];
+    return w===null ? null : slotTeam(r,p, w===0?1:0);
+  }
+
+  // Sieger aus Ergebnis: eindeutig -> 0/1, sonst null (Gleichstand/leer)
+  function scoreWinner(a,b){
+    if(a==="" || b==="") return null;
+    const na=+a, nb=+b;
+    if(Number.isNaN(na) || Number.isNaN(nb)) return null;
+    if(na>nb) return 0;
+    if(nb>na) return 1;
+    return null;
+  }
+
+  // Folgerunden (Sieger + Ergebnisse) entwerten, wenn sich etwas ändert
+  function invalidateAfter(r,p){
+    for(let rr=r+1; rr<COUNTS.length; rr++){
+      const pp = Math.floor(p / Math.pow(2, rr-r));
+      winner[rr][pp]=null;
+      scores[rr][pp]=["",""];        // Tore gehören zu konkreten Teams -> löschen
+    }
+    third=null; score3=["",""];      // HF-Verlierer können sich geändert haben
+  }
+
+  function setWinner(r,p,side){
+    if(winner[r][p]===side){ winner[r][p]=null; }   // erneut tippen = abwählen
+    else { winner[r][p]=side; }
+    invalidateAfter(r,p);
+    render();
+  }
+
+  const bracket=document.getElementById("bracket");
+  const thirdEl=document.getElementById("third");
+
+  function esc(s){ return (s==null?"":(""+s)).replace(/"/g,"&quot;"); }
+
+  function slotHTML(r,p,side){
+    const t=slotTeam(r,p,side);
+    const w=winner[r][p];
+    const val=esc(scores[r][p][side]);
+    if(!t){
+      return `<div class="slot empty"><span class="flag">·</span>`
+           + `<span class="nm">Sieger</span>`
+           + `<input class="score" type="text" inputmode="numeric" maxlength="2" disabled value=""></div>`;
+    }
+    let cls="slot";
+    if(w===side) cls+=" win";
+    else if(w!==null) cls+=" loser";
+    return `<div class="${cls}" data-r="${r}" data-p="${p}" data-s="${side}">`
+         + `<span class="flag">${t.f}</span><span class="nm">${t.n}</span>`
+         + `<input class="score" type="text" inputmode="numeric" maxlength="2" `
+         + `data-fid="s-${r}-${p}-${side}" value="${val}" placeholder="–"></div>`;
+  }
+
+  function matchHTML(r,p){
+    const d=esc(dts[r][p][0]), t=esc(dts[r][p][1]);
+    return `<div class="match" data-mr="${r}" data-mp="${p}">`
+         + `<div class="dt">`
+         + `<input class="d" type="text" maxlength="6" data-fid="d-${r}-${p}" value="${d}" placeholder="TT.MM.">`
+         + `<input class="t" type="text" maxlength="5" data-fid="t-${r}-${p}" value="${t}" placeholder="HH:MM">`
+         + `</div>`
+         + `<div class="pair">${slotHTML(r,p,0)}${slotHTML(r,p,1)}</div></div>`;
+  }
+
+  function render(){
+    let html="";
+    for(let r=0;r<COUNTS.length;r++){
+      let inner=`<div class="rlabel">${LABELS[r]}</div>`;
+      for(let p=0;p<COUNTS[r];p++) inner+=matchHTML(r,p);
+      html+=`<div class="round r${r}">${inner}</div>`;
+    }
+    const champ=winner[4][0]===null?null:slotTeam(4,0,winner[4][0]);
+    html+=`<div class="round champ"><div class="rlabel">Weltmeister</div>`
+        + `<div class="champ-box"><div class="cup">🏆</div>`
+        + `<div class="champ-card"><div class="ttl">Weltmeister</div>`
+        + (champ
+            ? `<div class="who">${champ.f}<span>${champ.n}</span></div>`
+            : `<div class="who ph">noch offen</div>`)
+        + `</div></div></div>`;
+
+    bracket.innerHTML = `<svg class="lines" id="lines"></svg>` + html;
+
+    // Spiel um Platz 3
+    const lA=loserTeam(3,0), lB=loserTeam(3,1);
+    let t3="";
+    if(lA||lB){
+      const row=(t,side)=>{
+        const val=esc(score3[side]);
+        if(!t) return `<div class="slot empty"><span class="flag">·</span>`
+             + `<span class="nm">Verlierer Halbfinale</span>`
+             + `<input class="score" type="text" disabled value=""></div>`;
+        let cls="slot"+(third===side?" win":(third!==null?" loser":""));
+        return `<div class="${cls}" data-t3="${side}"><span class="flag">${t.f}</span>`
+             + `<span class="nm">${t.n}</span>`
+             + `<input class="score" type="text" inputmode="numeric" maxlength="2" `
+             + `data-fid="s3-${side}" value="${val}" placeholder="–"></div>`;
+      };
+      t3=`<div class="th">Spiel um Platz 3</div>`
+       + `<div class="dtrow">`
+       + `<input class="d" type="text" maxlength="6" data-fid="d3" value="${esc(dt3[0])}" placeholder="TT.MM.">`
+       + `<input class="t" type="text" maxlength="5" data-fid="t3" value="${esc(dt3[1])}" placeholder="HH:MM">`
+       + `</div>`
+       + `<div class="pair">${row(lA,0)}${row(lB,1)}</div>`
+       + `<div class="note">Die beiden Halbfinal-Verlierer.</div>`;
+    } else {
+      t3=`<div class="th">Spiel um Platz 3</div>`
+       + `<div class="note">Erscheint, sobald die Halbfinals entschieden sind.</div>`;
+    }
+    thirdEl.innerHTML=t3;
+
+    requestAnimationFrame(drawLines);
+  }
+
+  // Neu zeichnen, aber Fokus + Cursor im aktiven Eingabefeld erhalten
+  function renderKeepFocus(){
+    const ae=document.activeElement;
+    const fid=(ae && ae.dataset)?ae.dataset.fid:null;
+    let ss=null;
+    if(fid){ try{ ss=ae.selectionStart; }catch(_){ ss=null; } }
+    render();
+    if(fid){
+      const el=document.querySelector('[data-fid="'+fid+'"]');
+      if(el){ el.focus(); try{ if(ss!=null) el.setSelectionRange(ss,ss); }catch(_){} }
+    }
+  }
+
+  function drawLines(){
+    const svg=bracket.querySelector("svg.lines");
+    if(!svg) return;
+    const z=zoom||1;
+    const base=bracket.getBoundingClientRect();
+    const W=bracket.offsetWidth, H=bracket.offsetHeight;
+    svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+    svg.setAttribute("width",W); svg.setAttribute("height",H);
+    let paths="";
+    const pairRect=(r,p)=>{
+      const el=bracket.querySelector(`.match[data-mr="${r}"][data-mp="${p}"] .pair`);
+      if(!el) return null;
+      const b=el.getBoundingClientRect();
+      return {l:(b.left-base.left)/z, r:(b.right-base.left)/z, t:(b.top-base.top)/z, h:b.height/z};
+    };
+    const matchLeft=(r,p)=>{
+      const el=bracket.querySelector(`.match[data-mr="${r}"][data-mp="${p}"]`);
+      return el ? (el.getBoundingClientRect().left-base.left)/z : null;
+    };
+    // Linie: rechte Kante der Quell-Paarung -> Anfang des Ziel-Spiels (vor dem Datum)
+    for(let r=1;r<COUNTS.length;r++){
+      for(let p=0;p<COUNTS[r];p++){
+        const dst=pairRect(r,p); if(!dst) continue;
+        const dxL=matchLeft(r,p); if(dxL===null) continue;
+        const dy=dst.t+dst.h/2, dx=dxL;
+        for(let side=0;side<2;side++){
+          const src=pairRect(r-1,p*2+side); if(!src) continue;
+          const sx=src.r, sy=src.t+src.h/2;
+          const mx=(sx+dx)/2;
+          const col = (winner[r-1][p*2+side]!==null) ? "var(--line-win)" : "var(--line)";
+          paths+=`<path d="M${sx} ${sy} H${mx} V${dy} H${dx}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+        }
+      }
+    }
+    // Finale -> Champion
+    const fin=pairRect(4,0);
+    if(fin){
+      const champEl=bracket.querySelector(".champ-card");
+      if(champEl){
+        const cb=champEl.getBoundingClientRect();
+        const cx=(cb.left-base.left)/z, cy=(cb.top-base.top)/z+cb.height/z/2;
+        const sx=fin.r, sy=fin.t+fin.h/2, mx=(sx+cx)/2;
+        const col=winner[4][0]!==null?"var(--line-win)":"var(--line)";
+        paths+=`<path d="M${sx} ${sy} H${mx} V${cy} H${cx}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+      }
+    }
+    svg.innerHTML=paths;
+  }
+
+  // ---- Eingaben: Datum / Uhrzeit / Ergebnis ----
+  function readFid(el){
+    const fid=(el && el.dataset)?el.dataset.fid:null; if(!fid) return null;
+    const a=fid.split("-");
+    return {fid, kind:a[0], r:+a[1], p:+a[2], side:+a[3]};
+  }
+  // Eingaben: Datum/Zeit speichern; Ergebnis auswerten
+  bracket.addEventListener("input",e=>{
+    const f=readFid(e.target); if(!f) return;
+    if(f.kind==="d"){ dts[f.r][f.p][0]=e.target.value; return; }
+    if(f.kind==="t"){ dts[f.r][f.p][1]=e.target.value; return; }
+    if(f.kind!=="s") return;
+    scores[f.r][f.p][f.side]=e.target.value;
+    const a=scores[f.r][f.p][0], b=scores[f.r][f.p][1];
+    // 0:0 ist in der K.o.-Runde kein Endergebnis -> Spiel zurücksetzen (Striche)
+    if(a!=="" && b!=="" && +a===0 && +b===0){
+      scores[f.r][f.p]=["",""];
+      if(winner[f.r][f.p]!==null){ winner[f.r][f.p]=null; invalidateAfter(f.r,f.p); }
+      renderKeepFocus(); return;
+    }
+    const w=scoreWinner(a,b);
+    if(w!==null && winner[f.r][f.p]!==w){
+      winner[f.r][f.p]=w; invalidateAfter(f.r,f.p); renderKeepFocus();
+    }
+  });
+
+  // ---- Interaktion: Sieger antippen ----
+  bracket.addEventListener("click",e=>{
+    if(e.target.closest("input")) return;          // Eingabefelder nicht als Klick werten
+    const s=e.target.closest(".slot");
+    if(!s || s.classList.contains("empty")) return;
+    if(s.dataset.r===undefined) return;
+    setWinner(+s.dataset.r, +s.dataset.p, +s.dataset.s);
+  });
+
+  // ---- Spiel um Platz 3 ----
+  thirdEl.addEventListener("input",e=>{
+    const el=e.target, fid=(el.dataset?el.dataset.fid:null); if(!fid) return;
+    if(fid==="d3"){ dt3[0]=el.value; return; }
+    if(fid==="t3"){ dt3[1]=el.value; return; }
+    if(fid==="s3-0") score3[0]=el.value;
+    else if(fid==="s3-1") score3[1]=el.value;
+    else return;
+    const a=score3[0], b=score3[1];
+    if(a!=="" && b!=="" && +a===0 && +b===0){
+      score3=["",""]; if(third!==null) third=null; renderKeepFocus(); return;
+    }
+    const w=scoreWinner(a,b);
+    if(w!==null && third!==w){ third=w; renderKeepFocus(); }
+  });
+  thirdEl.addEventListener("click",e=>{
+    if(e.target.closest("input")) return;
+    const s=e.target.closest(".slot");
+    if(!s || s.classList.contains("empty") || s.dataset.t3===undefined) return;
+    const side=+s.dataset.t3;
+    third = (third===side)?null:side;
+    render();
+  });
+
+  // ---- Zoom (Schieberegler) ----
+  const zoomer=document.getElementById("zoomer");
+  const zrange=document.getElementById("zrange");
+  function applyZoom(){
+    bracket.style.transform = zoom===1 ? "none" : `scale(${zoom})`;
+    const w=bracket.offsetWidth, h=bracket.offsetHeight;
+    zoomer.style.width  = (w*zoom)+"px";
+    zoomer.style.height = (h*zoom)+"px";
+    const pct = (zoom*100 - 40) / (160 - 40) * 100;   // Reglerfüllung
+    zrange.style.setProperty("--fill", pct.toFixed(1)+"%");
+    requestAnimationFrame(drawLines);
+  }
+  function setZoom(z){
+    zoom = Math.min(1.6, Math.max(0.4, Math.round(z*100)/100));
+    if(+zrange.value !== Math.round(zoom*100)) zrange.value = Math.round(zoom*100);
+    applyZoom();
+  }
+  zrange.addEventListener("input",()=>setZoom(+zrange.value/100));
+  document.getElementById("zoomIn").addEventListener("click",()=>setZoom(zoom+0.1));
+  document.getElementById("zoomOut").addEventListener("click",()=>setZoom(zoom-0.1));
+
+  window.addEventListener("resize",()=>applyZoom());
+  render();
+  applyZoom();
+})();
+</script>
+</body>
+</html>
