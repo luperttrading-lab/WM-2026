@@ -6,6 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a1330">
+<link rel="apple-touch-icon" href="icon.png">
 <meta name="apple-mobile-web-app-title" content="WM 2026">
 <title>WM 2026 · K.o.-Runde &amp; Simulation</title>
 <style>
@@ -163,6 +164,8 @@
   .slot .score:focus{outline:none; border-color:var(--gold);
     background:rgba(244,198,74,.12);}
   .slot .score:disabled{opacity:.3;}
+  .slot.locked{cursor:default;}
+  .slot.locked .score{cursor:default;}
   .slot.empty{color:var(--muted); cursor:default; font-style:italic; font-weight:500;}
   .slot.empty:active{background:transparent;}
   .slot.win{background:rgba(86,134,238,.34); box-shadow:inset 3px 0 0 var(--line-win);}
@@ -274,6 +277,8 @@
   // ---- State ----
   // winner[r][p] = 0 (oben) | 1 (unten) | null
   const winner = COUNTS.map(c => new Array(c).fill(null));
+  // official[r][p] = true: echtes (beendetes) Ergebnis aus der Datenquelle -> gesperrt
+  const official = COUNTS.map(c => new Array(c).fill(false));
   // scores[r][p] = [Tore oben, Tore unten]; dts[r][p] = [Datum, Uhrzeit]
   const scores = COUNTS.map(c => Array.from({length:c}, () => ["",""]));
   // Offizielle Termine WM 2026 (deutsche Zeit / MESZ), zugeordnet zur Bracket-Position.
@@ -297,6 +302,7 @@
   const cloneDTS = () => DTS.map(rd => rd.map(m => [m[0], m[1]]));
   const dts    = cloneDTS();
   let third = null;        // 0|1|null – Sieger Spiel um Platz 3
+  let official3 = false;   // echtes Ergebnis Spiel um Platz 3 -> gesperrt
   let score3 = ["",""];    // Ergebnis Spiel um Platz 3
   let dt3 = ["18.07.","23:00"];   // Datum/Uhrzeit Spiel um Platz 3
   let zoom = 1;            // Zoomfaktor (+/- Tasten)
@@ -305,7 +311,7 @@
   const STORE_KEY = "wm2026-bracket-2";
   function saveState(){
     try{
-      localStorage.setItem(STORE_KEY, JSON.stringify({v:1, winner, scores, dts, third, score3, dt3}));
+      localStorage.setItem(STORE_KEY, JSON.stringify({v:1, winner, scores, dts, third, score3, dt3, official, official3}));
     }catch(e){/* z.B. privater Modus / Vorschau – dann eben nicht gespeichert */}
   }
   function loadState(){
@@ -322,8 +328,11 @@
           scores[r][p]=[S(d.scores[r][p][0]), S(d.scores[r][p][1])];
         if(d.dts && d.dts[r] && Array.isArray(d.dts[r][p]))
           dts[r][p]=[S(d.dts[r][p][0]), S(d.dts[r][p][1])];
+        if(d.official && d.official[r] && typeof d.official[r][p]==="boolean")
+          official[r][p]=d.official[r][p];
       }
       if(d.third===0||d.third===1||d.third===null) third=d.third;
+      if(typeof d.official3==="boolean") official3=d.official3;
       if(Array.isArray(d.score3)) score3=[S(d.score3[0]), S(d.score3[1])];
       if(Array.isArray(d.dt3))    dt3=[S(d.dt3[0]), S(d.dt3[1])];
     }catch(e){/* defekter Speicher -> Default-Stand */}
@@ -357,8 +366,9 @@
       const pp = Math.floor(p / Math.pow(2, rr-r));
       winner[rr][pp]=null;
       scores[rr][pp]=["",""];        // Tore gehören zu konkreten Teams -> löschen
+      official[rr][pp]=false;        // gelöschtes Folge-Ergebnis ist nicht mehr "echt"
     }
-    third=null; score3=["",""];      // HF-Verlierer können sich geändert haben
+    third=null; score3=["",""]; official3=false;   // HF-Verlierer können sich geändert haben
   }
 
   function setWinner(r,p,side){
@@ -385,10 +395,12 @@
     let cls="slot";
     if(w===side) cls+=" win";
     else if(w!==null) cls+=" loser";
+    const lk=official[r][p];
+    if(lk) cls+=" locked";
     return `<div class="${cls}" data-r="${r}" data-p="${p}" data-s="${side}">`
          + `<span class="flag">${t.f}</span><span class="nm">${t.n}</span>`
          + `<input class="score" type="text" inputmode="numeric" maxlength="2" `
-         + `data-fid="s-${r}-${p}-${side}" value="${val}" placeholder="–"></div>`;
+         + `data-fid="s-${r}-${p}-${side}" value="${val}" placeholder="–"${lk?" readonly":""}></div>`;
   }
 
   function matchHTML(r,p){
@@ -412,10 +424,11 @@
            + `<span class="nm">Verlierer HF</span>`
            + `<input class="score" type="text" inputmode="numeric" maxlength="2" disabled value=""></div>`;
       let cls="slot"+(third===side?" win":(third!==null?" loser":""));
+      if(official3) cls+=" locked";
       return `<div class="${cls}" data-t3="${side}"><span class="flag">${team.f}</span>`
            + `<span class="nm">${team.n}</span>`
            + `<input class="score" type="text" inputmode="numeric" maxlength="2" `
-           + `data-fid="s3-${side}" value="${val}" placeholder="–"></div>`;
+           + `data-fid="s3-${side}" value="${val}" placeholder="–"${official3?" readonly":""}></div>`;
     };
     return `<div class="match3">`
          + `<div class="m3lbl">Spiel um Platz 3</div>`
@@ -549,6 +562,7 @@
     if(f.kind==="d"){ dts[f.r][f.p][0]=e.target.value; saveState(); return; }
     if(f.kind==="t"){ dts[f.r][f.p][1]=e.target.value; saveState(); return; }
     if(f.kind!=="s") return;
+    if(official[f.r][f.p]){ renderKeepFocus(); return; }   // echtes Ergebnis -> Eingabe verwerfen
     scores[f.r][f.p][f.side]=e.target.value;
     const a=scores[f.r][f.p][0], b=scores[f.r][f.p][1];
     // 0:0 ist in der K.o.-Runde kein Endergebnis -> Spiel zurücksetzen (Striche)
@@ -569,6 +583,7 @@
     const s=e.target.closest(".slot");
     if(!s || s.classList.contains("empty")) return;
     if(s.dataset.r===undefined) return;
+    if(official[+s.dataset.r][+s.dataset.p]) return;   // echtes Ergebnis -> nicht anklickbar
     setWinner(+s.dataset.r, +s.dataset.p, +s.dataset.s);
   });
 
@@ -577,6 +592,7 @@
     const el=e.target, fid=(el.dataset?el.dataset.fid:null); if(!fid) return;
     if(fid==="d3"){ dt3[0]=el.value; saveState(); return; }
     if(fid==="t3"){ dt3[1]=el.value; saveState(); return; }
+    if((fid==="s3-0"||fid==="s3-1") && official3){ renderKeepFocus(); return; }
     if(fid==="s3-0") score3[0]=el.value;
     else if(fid==="s3-1") score3[1]=el.value;
     else return;
@@ -591,6 +607,7 @@
     if(e.target.closest("input")) return;
     const s=e.target.closest(".slot");
     if(!s || s.classList.contains("empty") || s.dataset.t3===undefined) return;
+    if(official3) return;                              // echtes Ergebnis -> nicht anklickbar
     const side=+s.dataset.t3;
     third = (third===side)?null:side;
     render();
@@ -658,6 +675,7 @@
         const tA=slotTeam(r,p,0), tB=slotTeam(r,p,1);
         if(!tA||!tB) continue;
         const g=find(list, tA.id, tB.id); if(!g) continue;
+        if(isFin(g) && !official[r][p]){ official[r][p]=true; changed=true; }
         if(put(g, tA,
               v=>{scores[r][p]=v;}, ()=>scores[r][p],
               w=>{winner[r][p]=w; invalidateAfter(r,p);}, ()=>winner[r][p])) changed=true;
@@ -667,7 +685,10 @@
     const lA=loserTeam(3,0), lB=loserTeam(3,1);
     if(lA&&lB){
       const g=find(byType["third"], lA.id, lB.id);
-      if(g && put(g, lA, v=>{score3=v;}, ()=>score3, w=>{third=w;}, ()=>third)) changed=true;
+      if(g){
+        if(isFin(g) && !official3){ official3=true; changed=true; }
+        if(put(g, lA, v=>{score3=v;}, ()=>score3, w=>{third=w;}, ()=>third)) changed=true;
+      }
     }
     return changed;
   }
