@@ -758,7 +758,7 @@
   .durlbl{font-size:12px; color:var(--muted); flex:0 0 auto; display:flex; align-items:center;}
   .durval{font-size:12.5px; color:var(--txt); font-weight:800; min-width:46px; text-align:right; flex:0 0 auto;
     font-variant-numeric:tabular-nums;}
-  .liverow{display:flex; justify-content:space-between; align-items:baseline; margin:0 3px 8px; min-height:22px; scroll-margin-top:8px;}
+  .liverow{display:flex; justify-content:space-between; align-items:baseline; margin:0 3px 8px; min-height:22px;}
   .liveround{font-size:13px; font-weight:800; color:var(--gold); letter-spacing:.02em;}
   .liveclock{font-size:19px; font-weight:800; color:var(--txt); font-variant-numeric:tabular-nums;}
   .conf{display:flex; flex-direction:column; gap:3px; padding-bottom:6px;}
@@ -879,7 +879,7 @@
     margin-bottom:13px; box-shadow:0 3px 10px rgba(244,198,74,.25);}
   .rollbtn:active{transform:translateY(1px);}
   /* Aktionszeile: Würfel-Button + Namensumschalter (höhenneutral) */
-  .actionrow{display:flex; gap:8px; align-items:stretch; margin-bottom:10px;}
+  .actionrow{scroll-margin-top:8px; display:flex; gap:8px; align-items:stretch; margin-bottom:10px;}
   .actionrow .rollbtn{flex:1 1 auto; margin-bottom:0;}
   .nmtog{flex:0 0 auto; display:flex; border:1px solid var(--line); border-radius:12px;
     overflow:hidden; background:#142036;}
@@ -1286,24 +1286,19 @@
   document.querySelectorAll(".ibtn").forEach(btn=>btn.addEventListener("click",()=>openInfo(btn.dataset.info)));
   const probList=$("probList"), probStatus=$("probStatus");
 
-  function funnelBar(d){
-    // verschachtelte Runden als gestufter Balken: gold(WM) -> aussen dunkler(AF)
-    const seq=[[d.tit,'#f4c64a'],[d.fin,'#6e9bf0'],[d.hf,'#46639a'],[d.vf,'#33486e'],[d.af,'#243450']];
-    let parts=[];
-    for(let i=0;i<seq.length;i++){
-      const start = i===0 ? 0 : seq[i-1][0];
-      parts.push(`${seq[i][1]} ${start}% ${seq[i][0]}%`);
-    }
-    parts.push(`#141f33 ${d.af}%`);
-    return `<span class="fbar" style="background:linear-gradient(90deg,${parts.join(',')})"></span>`;
+  function funnelBar(d, maxTit){
+    // nur Weltmeister-Chance als goldener Balken (relativ zum Spitzenreiter skaliert)
+    const w = maxTit>0 ? Math.min(100, d.tit/maxTit*100) : 0;
+    return `<span class="fbar" style="background:linear-gradient(90deg,#f4c64a 0%,#f4c64a ${w.toFixed(1)}%,#141f33 ${w.toFixed(1)}%)"></span>`;
   }
 
   function renderProb(data, ms){
     data.sort((a,b)=> b.tit - a.tit);
+    const maxTit = data.length ? data[0].tit : 1;
     const code = nameMode==='code';
     let html = `<div class="phead"><span class="pf"></span><span class="pteam"></span>`
       + `<span class="pcol">AF</span><span class="pcol">VF</span><span class="pcol">HF</span>`
-      + `<span class="pcolf">F</span><span class="pwm">WM</span><span class="pfunnel"></span></div>`;
+      + `<span class="pcolf">F</span><span class="pwm">WM</span><span class="pfunnel">WM-Chance</span></div>`;
     data.forEach((d,rank)=>{
       const t=TEAMS[d.i], top=rank<4?' top':'';
       html += `<div class="prow${top}"><span class="pf">${t.f}</span>`
@@ -1311,7 +1306,7 @@
         + `<span class="pcol">${d.af.toFixed(0)}</span><span class="pcol">${d.vf.toFixed(0)}</span>`
         + `<span class="pcol">${d.hf.toFixed(0)}</span><span class="pcolf">${d.fin.toFixed(1)}</span>`
         + `<span class="pwm">${d.tit.toFixed(1)}</span>`
-        + `<span class="pfunnel">${funnelBar(d)}</span></div>`;
+        + `<span class="pfunnel">${funnelBar(d, maxTit)}</span></div>`;
     });
     probList.innerHTML = html;
     probList.className = 'rowlist ' + (code ? 'mode-c' : 'mode-n');
@@ -1537,7 +1532,8 @@
   tabSingle.addEventListener("click",()=>showTab("single"));
   tabLive.addEventListener("click",()=>showTab("live"));
 
-  function roll(){ lastSim = runOnce(); renderTree(lastSim); }
+  function roll(){ lastSim = runOnce(); renderTree(lastSim);
+    requestAnimationFrame(()=>viewSingle.querySelector(".actionrow").scrollIntoView({behavior:"smooth", block:"start"})); }
   $("rollBtn").addEventListener("click",roll);
 
   // ===== Live-Modus =====
@@ -1638,7 +1634,7 @@
     const maxMin = matches.some(m=>m.phase!=="reg") ? 120 : 90;
     liveRound.textContent=label;
     conf.innerHTML=matches.map((m,i)=>confRow(i,m)).join("");
-    if(!liveScrolled){ liveScrolled=true; requestAnimationFrame(()=>document.querySelector(".liverow").scrollIntoView({behavior:"smooth", block:"start"})); }
+    if(!liveScrolled){ liveScrolled=true; requestAnimationFrame(()=>viewLive.querySelector(".actionrow").scrollIntoView({behavior:"smooth", block:"start"})); }
     await animateRound(matches, evs, maxMin, durSec*1000*(maxMin/90));
     for(let i=0;i<matches.length && !liveAbort;i++) if(matches[i].phase==="pen"){ await animatePens(i,matches[i],evs[i].wS); markDone(matches[i],i); }
   }
