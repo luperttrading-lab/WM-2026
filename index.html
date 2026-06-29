@@ -241,7 +241,7 @@
 
 <div class="zoom" id="zoomCtl">
   <button class="zbtn" id="zoomOut" aria-label="kleiner">−</button>
-  <input type="range" class="zrange" id="zrange" min="40" max="160" step="5" value="100" aria-label="Zoom">
+  <input type="range" class="zrange" id="zrange" min="40" max="160" step="5" value="80" aria-label="Zoom">
   <button class="zbtn" id="zoomIn" aria-label="größer">+</button>
 </div>
 
@@ -305,7 +305,7 @@
   let official3 = false;   // echtes Ergebnis Spiel um Platz 3 -> gesperrt
   let score3 = ["",""];    // Ergebnis Spiel um Platz 3
   let dt3 = ["18.07.","23:00"];   // Datum/Uhrzeit Spiel um Platz 3
-  let zoom = 1;            // Zoomfaktor (+/- Tasten)
+  let zoom = 0.8;          // Zoomfaktor (+/- Tasten) – Start etwas kleiner, beide Spalten sichtbar
 
   // ---- Speichern / Laden (eigene Eingaben bleiben beim nächsten Aufruf erhalten) ----
   const STORE_KEY = "wm2026-bracket-2";
