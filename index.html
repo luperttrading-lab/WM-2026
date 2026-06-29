@@ -44,9 +44,9 @@
   .push-btns{display:flex; gap:8px; margin-top:14px; justify-content:flex-end;}
   .push-b{padding:9px 16px; border-radius:9px; border:1px solid rgba(160,190,255,.3);
     background:rgba(255,255,255,.05); color:#e8eeff; font-size:14px; font-weight:700; cursor:pointer;}
-  #vstamp{position:absolute; right:13px; bottom:1px; z-index:6; pointer-events:none;
+  #vstamp{position:absolute; top:100%; right:13px; margin-top:3px; z-index:6; pointer-events:none;
     font-family:ui-monospace,monospace; font-size:8px; letter-spacing:.04em;
-    color:rgba(200,212,240,.5);}
+    color:rgba(200,212,240,.45);}
 </style>
 </head>
 <body>
@@ -54,7 +54,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v3.7</span>
+    <span id="vstamp">v3.8</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -212,15 +212,16 @@
     box-shadow:0 1px 4px rgba(0,0,0,.45); animation:livepulse 1.6s ease-in-out infinite; }
   .slot.locked{cursor:default;}
   .slot.locked .score{cursor:default;}
-  /* beendetes Spiel: beide Teams dezent blau hinterlegt -> "fertig", ohne harten Kontrast */
+  /* beendetes Spiel: BEIDE Teams gleich dezent blau -> "fertig", ganz ruhig */
   .slot.locked{background:rgba(86,134,238,.12);}
+  .slot.loser{opacity:1;}                            /* Verlierer genauso sichtbar wie Sieger */
   .slot.empty{color:var(--muted); cursor:default; font-style:italic; font-weight:500;}
   .slot.empty:active{background:transparent;}
-  .slot.win{background:rgba(86,134,238,.22);}        /* Sieger nur minimal kräftiger */
-  .slot.win .nm{font-weight:800; color:#eff3ff;}     /* + fetter Name als feiner Hinweis */
-  .slot.win .score{background:rgba(110,155,240,.22); color:var(--txt);
-    border-color:rgba(150,185,255,.4);}
-  .slot.loser{opacity:.82;}                           /* Verlierer kaum gedämpft, nicht mehr blass */
+  /* beendete Spiele: Gewinner-Tore dezent grün, Verlierer-Tore dezent rot (nicht knallig) */
+  .slot.locked.win .score{color:#8bd6a3; background:rgba(95,200,140,.15);
+    border-color:rgba(120,210,160,.42);}
+  .slot.locked.loser .score{color:#e0a1a1; background:rgba(220,110,110,.14);
+    border-color:rgba(222,135,135,.4);}
 
   /* Champion / Endstand (Top 4) – Höhe & Position per alignFinish() an Finale+Platz3 angeglichen */
   .champ-box{position:absolute; left:11px; right:11px;}
@@ -1826,7 +1827,18 @@
         }
       }).catch(function(e){openOv("Fehler: "+(e&&e.message||e));});
     }
-    bell.addEventListener("click",enablePush);
+    function disablePush(){
+      bell.classList.remove("on");
+      if(!("serviceWorker" in navigator)){ openOv("Benachrichtigungen ausgeschaltet."); return; }
+      navigator.serviceWorker.getRegistration().then(function(reg){
+        if(reg&&reg.pushManager){
+          reg.pushManager.getSubscription().then(function(s){ if(s) s.unsubscribe().catch(function(){}); });
+        }
+      }).catch(function(){});
+      openOv("Benachrichtigungen ausgeschaltet \u2713  Du bekommst keine Tor-Nachrichten mehr. Zum Wiedereinschalten einfach erneut auf die Glocke tippen.");
+    }
+    function togglePush(){ if(bell.classList.contains("on")) disablePush(); else enablePush(); }
+    bell.addEventListener("click",togglePush);
     if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(function(reg){if(reg&&reg.pushManager)reg.pushManager.getSubscription().then(function(s){if(s)bell.classList.add("on");});}).catch(function(){});}
   })();
   </script>
