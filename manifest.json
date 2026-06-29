@@ -1,0 +1,14 @@
+{
+  "name": "WM 2026 · K.o.-Runde & Simulation",
+  "short_name": "WM 2026",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16245e",
+  "theme_color": "#16245e",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

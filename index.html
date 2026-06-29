@@ -5,35 +5,68 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0a1330">
+<meta name="theme-color" content="#16245e">
 <link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-title" content="WM 2026">
 <title>WM 2026 · K.o.-Runde &amp; Simulation</title>
 <style>
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0; padding:0; height:100%; background:#0a1330; overflow:hidden;}
+  html,body{margin:0; padding:0; height:100%; background:#16245e; overflow:hidden;}
   body{display:flex; flex-direction:column;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
   .switchbar{flex:0 0 auto; display:flex; gap:8px;
     padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;
-    background:#0a1330; border-bottom:1px solid rgba(160,190,255,.16); position:relative; z-index:5;}
+    background:#16245e; border-bottom:1px solid rgba(160,190,255,.16); position:relative; z-index:5;}
   .swtab{flex:1; padding:10px 8px; border-radius:11px; border:1px solid rgba(160,190,255,.22);
     background:rgba(255,255,255,.04); color:#8190c4; font-size:15px; font-weight:800;
     text-align:center; cursor:pointer; transition:background .15s,color .15s,border-color .15s;}
   .swtab.active{background:#f4c64a; color:#1a1206; border-color:#f4c64a;}
   .frames{flex:1 1 auto; position:relative; min-height:0;}
-  .frame{position:absolute; inset:0; width:100%; height:100%; border:0; display:block; background:#0a1330;}
+  .frame{position:absolute; inset:0; width:100%; height:100%; border:0; display:block; background:#16245e;}
   .frame.hidden{display:none;}
+  .bell{flex:0 0 auto; width:46px; padding:10px 0; border-radius:11px;
+    border:1px solid rgba(160,190,255,.22); background:rgba(255,255,255,.04);
+    color:#8190c4; font-size:18px; cursor:pointer; transition:background .15s,color .15s;}
+  .bell.on{background:rgba(244,198,74,.18); color:#f4c64a; border-color:#f4c64a;}
+  .push-ov{position:fixed; inset:0; z-index:50; display:flex; align-items:center;
+    justify-content:center; padding:24px; background:rgba(6,10,28,.72);}
+  .push-ov.hidden{display:none;}
+  .push-card{width:100%; max-width:420px; background:#16245e;
+    border:1px solid rgba(160,190,255,.28); border-radius:16px; padding:20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.5); color:#e8eeff;}
+  .push-title{font-size:17px; font-weight:800; color:#f4c64a; margin-bottom:8px;}
+  .push-msg{font-size:14px; line-height:1.45; color:#c3cdf0;}
+  .push-sub{width:100%; height:92px; margin-top:12px; font-size:10px; resize:none;
+    border-radius:8px; border:1px solid rgba(160,190,255,.28);
+    background:rgba(8,14,40,.6); color:#9fb0e0; padding:7px; font-family:monospace;}
+  .push-sub.hidden,.push-b.hidden{display:none;}
+  .push-btns{display:flex; gap:8px; margin-top:14px; justify-content:flex-end;}
+  .push-b{padding:9px 16px; border-radius:9px; border:1px solid rgba(160,190,255,.3);
+    background:rgba(255,255,255,.05); color:#e8eeff; font-size:14px; font-weight:700; cursor:pointer;}
 </style>
 </head>
 <body>
   <div class="switchbar">
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
+    <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
     <iframe id="fs" class="frame hidden" title="Simulation"></iframe>
+  </div>
+
+  <div id="pushOv" class="push-ov hidden">
+    <div class="push-card">
+      <div class="push-title">🔔 Tor-Benachrichtigungen</div>
+      <div class="push-msg" id="pushMsg"></div>
+      <textarea id="pushSub" class="push-sub hidden" readonly></textarea>
+      <div class="push-btns">
+        <button id="pushCopy" class="push-b hidden">Abo kopieren</button>
+        <button id="pushClose" class="push-b">Schließen</button>
+      </div>
+    </div>
   </div>
 
   <script type="text/html" id="srcB"><!DOCTYPE html>
@@ -136,14 +169,10 @@
   /* Datum / Uhrzeit vor der Paarung */
   .dt{flex:0 0 auto; width:46px; display:flex; flex-direction:column;
     align-items:center; gap:1px; margin-right:8px;}
-  .dt input{width:100%; background:transparent; border:none; padding:1px 0;
-    text-align:center; font-family:inherit; line-height:1.1; cursor:text;
-    border-radius:4px; -webkit-appearance:none;}
-  .dt input.d{font-size:11px; color:var(--muted); font-weight:600;}
-  .dt input.t{font-size:13.5px; color:var(--txt); font-weight:700;
+  .dt .d, .dt .t{display:block; width:100%; text-align:center; line-height:1.15;}
+  .dt .d{font-size:11px; color:var(--muted); font-weight:600;}
+  .dt .t{font-size:13.5px; color:var(--txt); font-weight:700;
     letter-spacing:.2px; font-variant-numeric:tabular-nums;}
-  .dt input::placeholder{color:var(--muted); opacity:.55;}
-  .dt input:focus{outline:none; background:rgba(160,190,255,.16);}
 
   .pair{flex:1 1 auto; border:1.6px solid var(--card-bd); border-radius:9px;
     overflow:hidden; background:var(--card); backdrop-filter:blur(2px);}
@@ -156,14 +185,15 @@
   .slot .flag{font-size:15px; width:19px; text-align:center; flex:0 0 auto;}
   .slot .nm{flex:1 1 auto; white-space:nowrap; overflow:hidden;
     text-overflow:ellipsis; font-weight:600;}
-  .slot .score{flex:0 0 auto; width:26px; height:22px; margin-left:5px;
+  .slot .score{flex:0 0 auto; min-width:26px; height:22px; margin-left:5px;
     border:1px solid var(--card-bd); border-radius:5px;
     background:rgba(8,14,40,.55); color:var(--txt);
-    font-size:13px; font-weight:700; text-align:center; padding:0;
-    font-family:inherit; -webkit-appearance:none;}
-  .slot .score:focus{outline:none; border-color:var(--gold);
-    background:rgba(244,198,74,.12);}
-  .slot .score:disabled{opacity:.3;}
+    font-size:13px; font-weight:700; text-align:center; padding:0 3px;
+    display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box;}
+  .slot .score.empty{border-color:transparent; background:transparent;}
+  .score.flash{ animation: scflash 1.2s ease; }
+  @keyframes scflash{ 0%,35%{ background:var(--gold); color:#1a1305; border-color:var(--gold);
+    box-shadow:0 0 0 2px rgba(244,198,74,.5); } 100%{} }
   .slot.locked{cursor:default;}
   .slot.locked .score{cursor:default;}
   .slot.empty{color:var(--muted); cursor:default; font-style:italic; font-weight:500;}
@@ -225,7 +255,7 @@
   </header>
 
   <div class="toolbar">
-    <div class="hint">Ergebnis eintippen — der Sieger rückt automatisch weiter.</div>
+    <div class="hint">Live-Spielstände der WM 2026 — Ergebnisse aktualisieren sich automatisch.</div>
   </div>
 
   <div class="scroll" id="scroll">
@@ -241,7 +271,7 @@
 
 <div class="zoom" id="zoomCtl">
   <button class="zbtn" id="zoomOut" aria-label="kleiner">−</button>
-  <input type="range" class="zrange" id="zrange" min="40" max="160" step="5" value="80" aria-label="Zoom">
+  <input type="range" class="zrange" id="zrange" min="40" max="160" step="5" value="70" aria-label="Zoom">
   <button class="zbtn" id="zoomIn" aria-label="größer">+</button>
 </div>
 
@@ -305,7 +335,7 @@
   let official3 = false;   // echtes Ergebnis Spiel um Platz 3 -> gesperrt
   let score3 = ["",""];    // Ergebnis Spiel um Platz 3
   let dt3 = ["18.07.","23:00"];   // Datum/Uhrzeit Spiel um Platz 3
-  let zoom = 0.8;          // Zoomfaktor (+/- Tasten) – Start etwas kleiner, beide Spalten sichtbar
+  let zoom = 0.7;          // Zoomfaktor (+/- Tasten) – Start etwas kleiner, beide Spalten sichtbar
 
   // ---- Speichern / Laden (eigene Eingaben bleiben beim nächsten Aufruf erhalten) ----
   const STORE_KEY = "wm2026-bracket-2";
@@ -390,25 +420,23 @@
     if(!t){
       return `<div class="slot empty"><span class="flag">·</span>`
            + `<span class="nm">Sieger</span>`
-           + `<input class="score" type="text" inputmode="numeric" maxlength="2" disabled value=""></div>`;
+           + `<span class="score empty"></span></div>`;
     }
     let cls="slot";
     if(w===side) cls+=" win";
     else if(w!==null) cls+=" loser";
-    const lk=official[r][p];
-    if(lk) cls+=" locked";
+    if(official[r][p]) cls+=" locked";
     return `<div class="${cls}" data-r="${r}" data-p="${p}" data-s="${side}">`
          + `<span class="flag">${t.f}</span><span class="nm">${t.n}</span>`
-         + `<input class="score" type="text" inputmode="numeric" maxlength="2" `
-         + `data-fid="s-${r}-${p}-${side}" value="${val}" placeholder="–"${lk?" readonly":""}></div>`;
+         + `<span class="score" data-fid="s-${r}-${p}-${side}">${val||"–"}</span></div>`;
   }
 
   function matchHTML(r,p){
     const d=esc(dts[r][p][0]), t=esc(dts[r][p][1]);
     return `<div class="match" data-mr="${r}" data-mp="${p}">`
          + `<div class="dt">`
-         + `<input class="d" type="text" maxlength="6" data-fid="d-${r}-${p}" value="${d}" placeholder="TT.MM.">`
-         + `<input class="t" type="text" maxlength="5" data-fid="t-${r}-${p}" value="${t}" placeholder="HH:MM">`
+         + `<span class="d">${d}</span>`
+         + `<span class="t">${t}</span>`
          + `</div>`
          + `<div class="pair">${slotHTML(r,p,0)}${slotHTML(r,p,1)}</div></div>`;
   }
@@ -422,20 +450,19 @@
       const val=esc(score3[side]);
       if(!team) return `<div class="slot empty"><span class="flag">·</span>`
            + `<span class="nm">Verlierer HF</span>`
-           + `<input class="score" type="text" inputmode="numeric" maxlength="2" disabled value=""></div>`;
+           + `<span class="score empty"></span></div>`;
       let cls="slot"+(third===side?" win":(third!==null?" loser":""));
       if(official3) cls+=" locked";
       return `<div class="${cls}" data-t3="${side}"><span class="flag">${team.f}</span>`
            + `<span class="nm">${team.n}</span>`
-           + `<input class="score" type="text" inputmode="numeric" maxlength="2" `
-           + `data-fid="s3-${side}" value="${val}" placeholder="–"${official3?" readonly":""}></div>`;
+           + `<span class="score" data-fid="s3-${side}">${val||"–"}</span></div>`;
     };
     return `<div class="match3">`
          + `<div class="m3lbl">Spiel um Platz 3</div>`
          + `<div class="match">`
          + `<div class="dt">`
-         + `<input class="d" type="text" maxlength="6" data-fid="d3" value="${d}" placeholder="TT.MM.">`
-         + `<input class="t" type="text" maxlength="5" data-fid="t3" value="${t}" placeholder="HH:MM">`
+         + `<span class="d">${d}</span>`
+         + `<span class="t">${t}</span>`
          + `</div>`
          + `<div class="pair">${row(lA,0)}${row(lB,1)}</div>`
          + `</div></div>`;
@@ -556,62 +583,8 @@
     const a=fid.split("-");
     return {fid, kind:a[0], r:+a[1], p:+a[2], side:+a[3]};
   }
-  // Eingaben: Datum/Zeit speichern; Ergebnis auswerten
-  bracket.addEventListener("input",e=>{
-    const f=readFid(e.target); if(!f) return;
-    if(f.kind==="d"){ dts[f.r][f.p][0]=e.target.value; saveState(); return; }
-    if(f.kind==="t"){ dts[f.r][f.p][1]=e.target.value; saveState(); return; }
-    if(f.kind!=="s") return;
-    if(official[f.r][f.p]){ renderKeepFocus(); return; }   // echtes Ergebnis -> Eingabe verwerfen
-    scores[f.r][f.p][f.side]=e.target.value;
-    const a=scores[f.r][f.p][0], b=scores[f.r][f.p][1];
-    // 0:0 ist in der K.o.-Runde kein Endergebnis -> Spiel zurücksetzen (Striche)
-    if(a!=="" && b!=="" && +a===0 && +b===0){
-      scores[f.r][f.p]=["",""];
-      if(winner[f.r][f.p]!==null){ winner[f.r][f.p]=null; invalidateAfter(f.r,f.p); }
-      renderKeepFocus(); return;
-    }
-    const w=scoreWinner(a,b);
-    if(w!==null && winner[f.r][f.p]!==w){
-      winner[f.r][f.p]=w; invalidateAfter(f.r,f.p); renderKeepFocus();
-    }
-  });
-
-  // ---- Interaktion: Sieger antippen ----
-  bracket.addEventListener("click",e=>{
-    if(e.target.closest("input")) return;          // Eingabefelder nicht als Klick werten
-    const s=e.target.closest(".slot");
-    if(!s || s.classList.contains("empty")) return;
-    if(s.dataset.r===undefined) return;
-    if(official[+s.dataset.r][+s.dataset.p]) return;   // echtes Ergebnis -> nicht anklickbar
-    setWinner(+s.dataset.r, +s.dataset.p, +s.dataset.s);
-  });
-
-  // ---- Spiel um Platz 3 (sitzt jetzt im Bracket, unter dem Finale) ----
-  bracket.addEventListener("input",e=>{
-    const el=e.target, fid=(el.dataset?el.dataset.fid:null); if(!fid) return;
-    if(fid==="d3"){ dt3[0]=el.value; saveState(); return; }
-    if(fid==="t3"){ dt3[1]=el.value; saveState(); return; }
-    if((fid==="s3-0"||fid==="s3-1") && official3){ renderKeepFocus(); return; }
-    if(fid==="s3-0") score3[0]=el.value;
-    else if(fid==="s3-1") score3[1]=el.value;
-    else return;
-    const a=score3[0], b=score3[1];
-    if(a!=="" && b!=="" && +a===0 && +b===0){
-      score3=["",""]; if(third!==null) third=null; renderKeepFocus(); return;
-    }
-    const w=scoreWinner(a,b);
-    if(w!==null && third!==w){ third=w; renderKeepFocus(); }
-  });
-  bracket.addEventListener("click",e=>{
-    if(e.target.closest("input")) return;
-    const s=e.target.closest(".slot");
-    if(!s || s.classList.contains("empty") || s.dataset.t3===undefined) return;
-    if(official3) return;                              // echtes Ergebnis -> nicht anklickbar
-    const side=+s.dataset.t3;
-    third = (third===side)?null:side;
-    render();
-  });
+  // K.o.-Runde ist reine Anzeige – Spielstände und Sieger kommen automatisch
+  // aus dem Live-Abgleich (worldcup26.ir). Keine manuelle Eingabe mehr.
 
   // ---- Zoom (Schieberegler) ----
   const zoomer=document.getElementById("zoomer");
@@ -638,6 +611,7 @@
   // Datenquelle: worldcup26.ir (kostenlos, ohne Schlüssel, CORS offen).
   // Läuft auf echter Domain (GitHub Pages / Homescreen). Im Claude-Vorschau-Sheet
   // scheitern externe Abrufe – dann bleibt einfach der gespeicherte/manuelle Stand.
+  let flashFids = [];
   const API_URL = "https://worldcup26.ir/get/games";
   const TYPE_BY_ROUND = ["r32","r16","qf","sf","final"]; // Bracket-Runden 0..4
 
@@ -654,8 +628,7 @@
       return (h===idA && a===idB) || (h===idB && a===idA);
     });
     // Trägt API-Tore seitenrichtig ein; gibt true zurück, wenn etwas geändert wurde
-    function put(g, teamTop, setScore, getScore, setWin, curWin){
-      if(!isFin(g)) return false;
+    function put(g, teamTop, fidBase, setScore, getScore, setWin, curWin){
       const h = num(g.home_team_id);
       let so, su;
       if(h===teamTop.id){ so=num(g.home_score); su=num(g.away_score); }
@@ -663,9 +636,13 @@
       if(so===null || su===null) return false;
       let ch=false;
       const cur=getScore();
-      if(cur[0]!==String(so) || cur[1]!==String(su)){ setScore([String(so),String(su)]); ch=true; }
-      const w = scoreWinner(String(so), String(su));
-      if(w!==null && curWin()!==w){ setWin(w); ch=true; }
+      if(cur[0]!==String(so)){ flashFids.push(fidBase+"-0"); ch=true; }
+      if(cur[1]!==String(su)){ flashFids.push(fidBase+"-1"); ch=true; }
+      if(ch) setScore([String(so),String(su)]);
+      if(isFin(g)){                                   // Sieger + Sperre erst bei Abpfiff
+        const w = scoreWinner(String(so), String(su));
+        if(w!==null && curWin()!==w){ setWin(w); ch=true; }
+      }
       return ch;
     }
     let changed=false;
@@ -676,7 +653,7 @@
         if(!tA||!tB) continue;
         const g=find(list, tA.id, tB.id); if(!g) continue;
         if(isFin(g) && !official[r][p]){ official[r][p]=true; changed=true; }
-        if(put(g, tA,
+        if(put(g, tA, `s-${r}-${p}`,
               v=>{scores[r][p]=v;}, ()=>scores[r][p],
               w=>{winner[r][p]=w; invalidateAfter(r,p);}, ()=>winner[r][p])) changed=true;
       }
@@ -687,19 +664,27 @@
       const g=find(byType["third"], lA.id, lB.id);
       if(g){
         if(isFin(g) && !official3){ official3=true; changed=true; }
-        if(put(g, lA, v=>{score3=v;}, ()=>score3, w=>{third=w;}, ()=>third)) changed=true;
+        if(put(g, lA, "s3", v=>{score3=v;}, ()=>score3, w=>{third=w;}, ()=>third)) changed=true;
       }
     }
     return changed;
   }
 
+  function flashChanged(){
+    for(const fid of flashFids){
+      const el=document.querySelector(`.score[data-fid="${fid}"]`);
+      if(el){ el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+    }
+    flashFids.length = 0;
+  }
   function fetchLive(){
+    flashFids.length = 0;
     const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), 9000));
     Promise.race([ fetch(API_URL, {cache:"no-store"}).then(r=>r.json()), timeout ])
       .then(data=>{
         const games = data && data.games;
         if(!Array.isArray(games)) return;
-        if(applyLiveGames(games)){ saveState(); render(); }
+        if(applyLiveGames(games)){ saveState(); render(); flashChanged(); }
       })
       .catch(()=>{ /* Vorschau/offline/Quelle weg -> manueller Stand bleibt erhalten */ });
   }
@@ -709,6 +694,7 @@
   render();
   applyZoom();
   fetchLive();
+  setInterval(fetchLive, 30000);   // alle 30 s echten Live-Stand abgleichen
 })();
 [[SCRIPTEND]]
 </body>
@@ -1020,7 +1006,7 @@
   </div>
 
   <div class="tabs">
-    <button id="tabProb" class="on">Chancen</button>
+    <button id="tabProb" class="on">Titelchancen</button>
     <button id="tabSingle">Ein Turnier</button>
     <button id="tabLive">▶ Live</button>
     <button class="ibtn tabinfo" data-info="tabs">i</button>
@@ -1028,10 +1014,10 @@
 
   <div class="view on" id="viewProb">
     <div class="actionrow">
-      <button class="rollbtn" id="simBtn">🎲 Simulation starten</button>
+      <button class="rollbtn" id="simBtn">🎲 100.000 Turniere simulieren</button>
       <div class="nmtog" role="group" aria-label="Namensanzeige">
-        <button type="button" data-mode="code" class="on">Kürzel</button>
-        <button type="button" data-mode="full">Name</button>
+        <button type="button" data-mode="code">Kürzel</button>
+        <button type="button" data-mode="full" class="on">Name</button>
       </div>
     </div>
     <div class="status" id="probStatus"></div>
@@ -1115,7 +1101,9 @@
   const NT = TEAMS.length; // 32
 
   // Namensanzeige: 'full' = voller Name, 'code' = FIFA-3-Buchstaben-Kürzel
-  let nameMode = 'code';
+  let nameMode = 'full';
+  const modeByTab = {prob:'full', single:'code'};
+  let activeNameTab = 'prob';
   const teamLabel = t => nameMode === 'code' ? t.c : t.n;
   let SCORES_IN_NAME_MODE = false;  // Tore nur im Kürzel-Modus (Namen sonst zu kurz)
   const scoresVisible = () => nameMode==='code' || SCORES_IN_NAME_MODE;
@@ -1515,7 +1503,7 @@
   $("imodalX").addEventListener("click",closeInfo);
   imodal.addEventListener("click",e=>{ if(e.target===imodal) closeInfo(); });
 
-  $("simBtn").addEventListener("click", recompute);
+  $("simBtn").addEventListener("click", ()=>{ recompute(); requestAnimationFrame(()=>$("viewProb").querySelector(".actionrow").scrollIntoView({behavior:"smooth", block:"start"})); });
 
   // Tabs
   const tabProb=$("tabProb"), tabSingle=$("tabSingle"), tabLive=$("tabLive");
@@ -1525,6 +1513,8 @@
     const p=which==="prob", s=which==="single", l=which==="live";
     tabProb.classList.toggle("on",p); tabSingle.classList.toggle("on",s); tabLive.classList.toggle("on",l);
     viewProb.classList.toggle("on",p); viewSingle.classList.toggle("on",s); viewLive.classList.toggle("on",l);
+    if(p){ activeNameTab='prob'; nameMode=modeByTab.prob; syncNmtog(); if(lastProb) renderProb(lastProb.data,lastProb.ms); }
+    if(s){ activeNameTab='single'; nameMode=modeByTab.single; syncNmtog(); if(lastSim) renderTree(lastSim); }
     if(s && !rolledOnce){ rolledOnce=true; requestAnimationFrame(roll); }
     if(!l) stopLive();
   }
@@ -1683,13 +1673,17 @@
   });
 
   // Namensanzeige umschalten (beide Toggle-Instanzen synchron, kein Neu-Rechnen)
+  function syncNmtog(){
+    const view = activeNameTab==='prob' ? viewProb : viewSingle;
+    view.querySelectorAll(".nmtog button[data-mode]").forEach(b=>
+      b.classList.toggle("on", b.dataset.mode===nameMode));
+  }
   function setNameMode(m){
     if(m===nameMode) return;
-    nameMode = m;
-    document.querySelectorAll(".nmtog button[data-mode]").forEach(b=>
-      b.classList.toggle("on", b.dataset.mode===m));
-    if(lastProb) renderProb(lastProb.data, lastProb.ms);
-    if(lastSim)  renderTree(lastSim);
+    nameMode = m; modeByTab[activeNameTab] = m;
+    syncNmtog();
+    if(activeNameTab==='prob' && lastProb) renderProb(lastProb.data, lastProb.ms);
+    if(activeNameTab==='single' && lastSim) renderTree(lastSim);
   }
   document.querySelectorAll(".nmtog").forEach(g=>
     g.addEventListener("click", e=>{
@@ -1725,6 +1719,37 @@
     var tabs=document.querySelectorAll('.swtab');
     for(var i=0;i<tabs.length;i++){ tabs[i].addEventListener('click', (function(t){ return function(){ show(t.dataset.v); }; })(tabs[i])); }
     load('b'); // K.o.-Runde sofort, Simulation erst bei Bedarf
+
+    // ---- Push-Benachrichtigungen ----
+    var VAPID_PUBLIC="BN4D-4wP9HRIVODTcIujObUQxfkUqy56KCLP9MZxln7arr1gchpqWQv8BG9m0xwqXASCkfNwUr6ta5jx6FUGJS4";
+    function u8(b64){var pad="=".repeat((4-b64.length%4)%4);var s=(b64+pad).replace(/-/g,"+").replace(/_/g,"/");var raw=atob(s);var a=new Uint8Array(raw.length);for(var i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);return a;}
+    var ov=document.getElementById("pushOv"),pmsg=document.getElementById("pushMsg"),psub=document.getElementById("pushSub"),pcopy=document.getElementById("pushCopy"),bell=document.getElementById("bellBtn");
+    function openOv(text,sub){pmsg.textContent=text;if(sub){psub.value=sub;psub.classList.remove("hidden");pcopy.classList.remove("hidden");}else{psub.classList.add("hidden");pcopy.classList.add("hidden");}ov.classList.remove("hidden");}
+    document.getElementById("pushClose").addEventListener("click",function(){ov.classList.add("hidden");});
+    pcopy.addEventListener("click",function(){psub.select();try{document.execCommand("copy");}catch(e){}pcopy.textContent="Kopiert \u2713";});
+    function enablePush(){
+      var standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone;
+      if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){
+        openOv("Push wird in diesem Kontext nicht unterst\u00fctzt. Auf dem iPhone: Teilen-Symbol \u2192 \u201eZum Home-Bildschirm\u201c, dann die App von dort \u00f6ffnen.");return;}
+      if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!standalone){
+        openOv("Bitte zuerst \u00fcber das Teilen-Symbol \u201eZum Home-Bildschirm\u201c hinzuf\u00fcgen und die App von dort (Vollbild) \u00f6ffnen. Dann hier erneut tippen.");return;}
+      navigator.serviceWorker.register("sw.js").then(function(reg){
+        return navigator.serviceWorker.ready.then(function(){return reg;});
+      }).then(function(reg){
+        return Notification.requestPermission().then(function(perm){
+          if(perm!=="granted"){openOv("Benachrichtigungen wurden nicht erlaubt. \u00c4nderbar in den iOS-Einstellungen unter \u201eMitteilungen\u201c.");return null;}
+          return reg.pushManager.getSubscription().then(function(s){
+            return s||reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(VAPID_PUBLIC)});
+          });
+        });
+      }).then(function(sub){
+        if(!sub)return;
+        bell.classList.add("on");
+        openOv("Benachrichtigungen aktiviert \u2713  F\u00fcr den Test: Abo unten kopieren und ins Test-Skript auf dem Mac einsetzen.",JSON.stringify(sub));
+      }).catch(function(e){openOv("Fehler: "+(e&&e.message||e));});
+    }
+    bell.addEventListener("click",enablePush);
+    if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(function(reg){if(reg&&reg.pushManager)reg.pushManager.getSubscription().then(function(s){if(s)bell.classList.add("on");});}).catch(function(){});}
   })();
   </script>
 </body>
