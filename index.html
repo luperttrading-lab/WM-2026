@@ -12,8 +12,9 @@
 <title>WM 2026 · K.o.-Runde &amp; Simulation</title>
 <style>
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0; padding:0; height:100%; background:#16245e; overflow:hidden;}
-  body{display:flex; flex-direction:column;
+  html,body{margin:0; padding:0; background:#16245e; overflow:hidden;}
+  html{height:100vh; height:100dvh;}
+  body{display:flex; flex-direction:column; height:100vh; height:100dvh;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
   .switchbar{flex:0 0 auto; display:flex; gap:8px;
     padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;
@@ -61,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v3.9</span>
+    <span id="vstamp">v4.0</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
