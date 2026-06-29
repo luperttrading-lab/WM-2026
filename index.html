@@ -753,6 +753,31 @@
   .grp-label{font-size:13px; font-weight:700; color:var(--txt);}
   .grp-val{font-size:15px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums;}
   .hint{font-size:11px; color:var(--muted); display:flex; justify-content:space-between; margin-top:4px;}
+  /* ---- Live-Modus ---- */
+  .durrow{display:flex; align-items:center; gap:10px; margin:2px 2px 10px;}
+  .durlbl{font-size:12px; color:var(--muted); flex:0 0 auto; display:flex; align-items:center;}
+  .durval{font-size:12.5px; color:var(--txt); font-weight:800; min-width:46px; text-align:right; flex:0 0 auto;
+    font-variant-numeric:tabular-nums;}
+  .liverow{display:flex; justify-content:space-between; align-items:baseline; margin:0 3px 9px; min-height:22px;}
+  .liveround{font-size:13px; font-weight:800; color:var(--gold); letter-spacing:.02em;}
+  .liveclock{font-size:19px; font-weight:800; color:var(--txt); font-variant-numeric:tabular-nums;}
+  .conf{display:flex; flex-direction:column; gap:5px; padding-bottom:6px;}
+  .cmatch{display:flex; align-items:center; gap:6px; padding:5px 9px;
+    border:1px solid var(--line); border-radius:9px; background:var(--card); font-size:11px; transition:opacity .3s;}
+  .cmatch.live{border-color:rgba(244,198,74,.4);}
+  .cmatch.done{opacity:.58;}
+  .cteam{flex:1 1 0; display:flex; align-items:center; gap:5px; min-width:0; padding:3px 6px; border-radius:7px;
+    transition:background .25s;}
+  .cteam.away{flex-direction:row-reverse; text-align:right;}
+  .cteam.lead{background:rgba(120,165,250,.22);}
+  .cteam .cf{font-size:13.5px; flex:0 0 auto;}
+  .cteam .cn{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted);}
+  .cteam.win .cn{font-weight:800; color:var(--txt);}
+  .cteam.lose .cn{color:var(--muted);}
+  .cscore{flex:0 0 auto; min-width:46px; text-align:center; font-weight:800; font-size:12.5px;
+    font-variant-numeric:tabular-nums; color:var(--txt); padding:2px 4px; border-radius:6px;}
+  .cscore.flash{animation:scflash .75s ease;}
+  @keyframes scflash{0%,40%{background:var(--gold); color:#1a1305;} 100%{background:transparent; color:var(--txt);}}
   /* Turnierfaktor */
   .spec{font-size:9px; font-weight:700; color:#1a1305; background:var(--gold);
     padding:1px 6px; border-radius:7px; letter-spacing:.03em; margin-left:5px; vertical-align:1px;}
@@ -913,6 +938,7 @@
   .zr{flex:1 1 auto;}
 
   /* Endstand */
+  #liveFinish{margin-top:12px;}
   .finish{border:1.5px solid var(--gold); border-radius:13px; overflow:hidden; margin-top:6px;
     background:linear-gradient(180deg,rgba(244,198,74,.14),rgba(244,198,74,.03));}
   .cup{text-align:center; font-size:40px; line-height:1; margin:4px 0 -2px;
@@ -994,8 +1020,9 @@
   </div>
 
   <div class="tabs">
-    <button id="tabProb" class="on">Wahrscheinlichkeiten</button>
-    <button id="tabSingle">Ein mögliches Turnier</button>
+    <button id="tabProb" class="on">Chancen</button>
+    <button id="tabSingle">Ein Turnier</button>
+    <button id="tabLive">▶ Live</button>
     <button class="ibtn tabinfo" data-info="tabs">i</button>
   </div>
 
@@ -1030,6 +1057,27 @@
       <button class="zb" id="tzIn" aria-label="größer">+</button>
     </div>
     <div id="singleFinish"></div>
+  </div>
+
+  <div class="view" id="viewLive">
+    <div class="actionrow">
+      <button class="rollbtn" id="liveBtn">▶ Anpfiff</button>
+      <div class="nmtog" role="group" aria-label="Namensanzeige">
+        <button type="button" data-lmode="code" class="on">Kürzel</button>
+        <button type="button" data-lmode="full">Name</button>
+      </div>
+    </div>
+    <div class="durrow">
+      <span class="durlbl">Spieldauer<button class="ibtn" data-info="live">i</button></span>
+      <input type="range" class="zr" id="liveDur" min="10" max="120" step="5" value="30">
+      <span class="durval" id="liveDurVal">30 s</span>
+    </div>
+    <div class="liverow">
+      <span class="liveround" id="liveRound">Bereit zum Anpfiff</span>
+      <span class="liveclock" id="liveClock"></span>
+    </div>
+    <div class="conf" id="conf"></div>
+    <div id="liveFinish"></div>
   </div>
 </div>
 
@@ -1224,7 +1272,8 @@
     div:{t:"Divisor", h:`<p>Steuert über die Elo-Logik, wie stark der Punkteunterschied zweier Teams die Siegchance bestimmt.</p><p><b>Links (klein, bis 300):</b> schärfer — schon kleine Vorsprünge machen den Favoriten fast unschlagbar.<br><b>Rechts (groß, bis 800):</b> ausgeglichener — auch Außenseiter haben realistische Chancen.</p><p>P(A&nbsp;schlägt&nbsp;B) = 1 / (1 + 10^((P<sub>B</sub>−P<sub>A</sub>)/Divisor)). Bei 600 ergibt ein Vorsprung von 600&nbsp;Punkten rund 91&nbsp;% Siegchance, bei 300 schon ~99&nbsp;%.</p>`},
     home:{t:"Heimvorteil", h:`<p>Die Gastgeber <b>USA, Kanada und Mexiko</b> bekommen einen Bonus auf ihre Weltranglisten-Punkte, um den Heimvorteil abzubilden.</p><p>Der Regler stellt die Höhe ein (0–150&nbsp;Punkte). Zur Einordnung: 75&nbsp;Punkte entsprechen etwa dem Abstand zwischen einem starken und einem mittleren Team.</p>`},
     tf:{t:"Turnierfaktor", h:`<div class="iwarn">⚠ Statistisch <b>nicht</b> nachweisbar (I²&nbsp;=&nbsp;0&nbsp;%, p&nbsp;=&nbsp;0,54). Reines „Was wäre, wenn die Punktschätzungen doch etwas bedeuten“. Nur die 19&nbsp;Teams mit ≥&nbsp;5 WM-Teilnahmen erhalten einen Wert; die übrigen 13 bleiben ohne Bonus.</div><p>Der Faktor misst, wie stark ein Team in seinen WM-Spielen vom <b>Elo-Erwartungswert</b> abwich (Elfmeterschießen elo-neutral). Positiv = lief im Turnier über der eigenen Spielstärke; der Wert wird als Elo-Bonus eingerechnet.</p><div class="fp-title">Turnierfaktor je Team · 95 %-Intervalle</div><div id="fpHost"></div><p>Jedes Intervall kreuzt die Null, der gepoolte Effekt (Raute) liegt praktisch bei null — <b>kein nachweisbarer Turnier-Effekt</b>. Deshalb nur ein An/Aus-Schalter, keine Feinregelung.</p>`},
-    tabs:{t:"Die zwei Ansichten", h:`<p><b>Wahrscheinlichkeiten:</b> Aus zehntausenden simulierten Turnieren wird gezählt, wie oft jedes Team welche Runde erreicht — als Prozent. <b>AF</b>&nbsp;Achtelfinale, <b>VF</b>&nbsp;Viertelfinale, <b>HF</b>&nbsp;Halbfinale, <b>F</b>&nbsp;Finale, <b>WM</b>&nbsp;Titel. Die statistische Gesamtsicht über alle Läufe.</p><p><b>Ein mögliches Turnier:</b> Es wird genau <b>ein</b> Turnier ausgelost und der komplette K.-o.-Baum mit konkreten Ergebnissen gezeigt — ein einzelnes Beispiel, wie die WM ablaufen könnte. Jedes Würfeln liefert ein neues.</p>`}
+    live:{t:"Live-Modus", h:`<p>Spielt ein komplettes Turnier in Echtzeit ab: Die Tore fallen über die 90 Minuten, danach folgen bei Gleichstand Verlängerung und Elfmeterschießen. Alle Spiele einer Runde laufen gleichzeitig (Konferenz).</p><p>Der Regler stellt ein, wie lange die regulären 90 Minuten dauern (10 s bis 2 min); die Verlängerung kommt zeitlich obendrauf.</p><p><b>Wichtig:</b> Die Ergebnisse sind exakt dieselben wie unter „Ein Turnier" — der Live-Modus zeigt nur, <i>wie</i> sie zustande kommen.</p>`},
+    tabs:{t:"Die drei Ansichten", h:`<p><b>Wahrscheinlichkeiten:</b> Aus zehntausenden simulierten Turnieren wird gezählt, wie oft jedes Team welche Runde erreicht — als Prozent. <b>AF</b>&nbsp;Achtelfinale, <b>VF</b>&nbsp;Viertelfinale, <b>HF</b>&nbsp;Halbfinale, <b>F</b>&nbsp;Finale, <b>WM</b>&nbsp;Titel. Die statistische Gesamtsicht über alle Läufe.</p><p><b>Ein mögliches Turnier:</b> Es wird genau <b>ein</b> Turnier ausgelost und der komplette K.-o.-Baum mit konkreten Ergebnissen gezeigt — ein einzelnes Beispiel, wie die WM ablaufen könnte. Jedes Würfeln liefert ein neues.</p><p><b>Live:</b> Dasselbe Turnier, aber in Echtzeit miterlebt — die Tore fallen über die Spielzeit, mit Verlängerung und Elfmeterschießen.</p>`}
   };
   const imodal=$("imodal"), imodalTitle=$("imodalTitle"), imodalBody=$("imodalBody");
   function openInfo(key){
@@ -1474,20 +1523,147 @@
   $("simBtn").addEventListener("click", recompute);
 
   // Tabs
-  const tabProb=$("tabProb"), tabSingle=$("tabSingle");
-  const viewProb=$("viewProb"), viewSingle=$("viewSingle");
+  const tabProb=$("tabProb"), tabSingle=$("tabSingle"), tabLive=$("tabLive");
+  const viewProb=$("viewProb"), viewSingle=$("viewSingle"), viewLive=$("viewLive");
   let rolledOnce=false;
   function showTab(which){
-    const p = which==="prob";
-    tabProb.classList.toggle("on",p); tabSingle.classList.toggle("on",!p);
-    viewProb.classList.toggle("on",p); viewSingle.classList.toggle("on",!p);
-    if(!p && !rolledOnce){ rolledOnce=true; requestAnimationFrame(roll); }
+    const p=which==="prob", s=which==="single", l=which==="live";
+    tabProb.classList.toggle("on",p); tabSingle.classList.toggle("on",s); tabLive.classList.toggle("on",l);
+    viewProb.classList.toggle("on",p); viewSingle.classList.toggle("on",s); viewLive.classList.toggle("on",l);
+    if(s && !rolledOnce){ rolledOnce=true; requestAnimationFrame(roll); }
+    if(!l) stopLive();
   }
   tabProb.addEventListener("click",()=>showTab("prob"));
   tabSingle.addEventListener("click",()=>showTab("single"));
+  tabLive.addEventListener("click",()=>showTab("live"));
 
   function roll(){ lastSim = runOnce(); renderTree(lastSim); }
   $("rollBtn").addEventListener("click",roll);
+
+  // ===== Live-Modus =====
+  const conf=$("conf"), liveRound=$("liveRound"), liveClock=$("liveClock");
+  const liveBtn=$("liveBtn"), liveDur=$("liveDur"), liveDurVal=$("liveDurVal");
+  const RLABEL=["Sechzehntelfinale","Achtelfinale","Viertelfinale","Halbfinale","Finale"];
+  let liveNameMode="code", liveAbort=false, liveRunning=false, liveTimer=null, liveRaf=null, liveMatches=null, liveSim=null;
+  const liveLabel = t => liveNameMode==="code" ? t.c : t.n;
+  function fmtDur(s){ return s<60 ? s+" s" : (s%60===0 ? (s/60)+" min" : Math.floor(s/60)+":"+String(s%60).padStart(2,"0")+" min"); }
+  function durUpdate(){ liveDurVal.textContent=fmtDur(+liveDur.value); setFill(liveDur); }
+  liveDur.addEventListener("input",durUpdate); durUpdate();
+
+  // Tor-Minuten aus dem fertigen Spiel ableiten (rein kosmetisch -> Endergebnis bleibt exakt gleich)
+  function genEvents(m){
+    const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+    const aWin=(m.w===m.a), wS=aWin?"a":"b", lS=aWin?"b":"a", ev=[];
+    if(m.phase==="reg"){
+      for(let i=0;i<m.sw;i++) ev.push({min:rnd(1,90),s:wS});
+      for(let i=0;i<m.sl;i++) ev.push({min:rnd(1,90),s:lS});
+    } else if(m.phase==="aet"){
+      for(let i=0;i<m.sl;i++){ ev.push({min:rnd(1,90),s:wS}); ev.push({min:rnd(1,90),s:lS}); }
+      for(let i=0;i<m.sw-m.sl;i++) ev.push({min:rnd(91,120),s:wS});
+    } else {
+      const base=[0,1,2][rnd(0,2)];
+      for(let i=0;i<base;i++){ ev.push({min:rnd(1,90),s:wS}); ev.push({min:rnd(1,90),s:lS}); }
+    }
+    ev.sort((x,y)=>x.min-y.min);
+    return {ev, wS, lS};
+  }
+  function confRow(i,m){
+    const ta=TEAMS[m.a], tb=TEAMS[m.b];
+    return `<div class="cmatch live" data-ci="${i}">`
+      + `<span class="cteam home" data-side="a"><span class="cf">${ta.f}</span><span class="cn">${liveLabel(ta)}</span></span>`
+      + `<span class="cscore" data-sc="${i}">0:0</span>`
+      + `<span class="cteam away" data-side="b"><span class="cf">${tb.f}</span><span class="cn">${liveLabel(tb)}</span></span></div>`;
+  }
+  function updateLiveNames(){
+    if(liveMatches) liveMatches.forEach((m,i)=>{ const el=conf.querySelector(`.cmatch[data-ci="${i}"]`); if(!el) return;
+      el.querySelector('[data-side="a"] .cn').textContent=liveLabel(TEAMS[m.a]);
+      el.querySelector('[data-side="b"] .cn').textContent=liveLabel(TEAMS[m.b]); });
+    if(liveSim && $("liveFinish").innerHTML) renderLiveFinish(liveSim);
+  }
+  viewLive.querySelectorAll(".nmtog button").forEach(btn=>btn.addEventListener("click",()=>{
+    viewLive.querySelectorAll(".nmtog button").forEach(b=>b.classList.remove("on"));
+    btn.classList.add("on"); liveNameMode=btn.dataset.lmode; updateLiveNames();
+  }));
+  const liveSleep = ms => new Promise(r=>{ liveTimer=setTimeout(r,ms); });
+  function stopLive(){ liveAbort=true; liveRunning=false;
+    if(liveTimer) clearTimeout(liveTimer); if(liveRaf) cancelAnimationFrame(liveRaf);
+    liveBtn.textContent="▶ Anpfiff"; }
+  function flashScore(i,txt){ const el=conf.querySelector(`.cscore[data-sc="${i}"]`);
+    if(!el) return; el.textContent=txt; el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+  const endMinOf = m => m.phase==="reg" ? 90 : 120;   // Spiel-Schlusszeit
+  function updateLead(i,sc){
+    const el=conf.querySelector(`.cmatch[data-ci="${i}"]`); if(!el) return;
+    el.querySelector('[data-side="a"]').classList.toggle("lead", sc.a>sc.b);
+    el.querySelector('[data-side="b"]').classList.toggle("lead", sc.b>sc.a);
+  }
+  function markDone(m,i){
+    const el=conf.querySelector(`.cmatch[data-ci="${i}"]`); if(!el || el.classList.contains("done")) return;
+    el.classList.remove("live"); el.classList.add("done");
+    const aWin=(m.w===m.a);
+    const ha=el.querySelector('[data-side="a"]'), hb=el.querySelector('[data-side="b"]');
+    ha.classList.add(aWin?"win":"lose"); hb.classList.add(aWin?"lose":"win");
+    ha.classList.toggle("lead",aWin); hb.classList.toggle("lead",!aWin);
+    if(m.phase==="aet"){ const sc=el.querySelector(".cscore"); if(sc && !/n\.V\./.test(sc.textContent)) sc.textContent+=" n.V."; }
+  }
+  function animateRound(matches, evs, maxMin, durMs){
+    return new Promise(resolve=>{
+      const t0=performance.now(), fired=evs.map(e=>e.ev.map(()=>false)), sc=matches.map(()=>({a:0,b:0}));
+      const ends=matches.map(endMinOf), done=matches.map(()=>false);
+      function frame(now){
+        if(liveAbort){ resolve(); return; }
+        const prog=Math.min(1,(now-t0)/durMs), min=Math.round(prog*maxMin);
+        liveClock.textContent=min+"'";
+        for(let i=0;i<matches.length;i++){
+          const mm=Math.min(min, ends[i]);                       // Spiel friert an seiner Schlusszeit ein
+          for(let j=0;j<evs[i].ev.length;j++)
+            if(!fired[i][j] && evs[i].ev[j].min<=mm){ fired[i][j]=true; sc[i][evs[i].ev[j].s]++; flashScore(i, sc[i].a+":"+sc[i].b); updateLead(i, sc[i]); }
+          if(min>=ends[i] && !done[i] && matches[i].phase!=="pen"){ done[i]=true; markDone(matches[i],i); }
+        }
+        if(prog<1) liveRaf=requestAnimationFrame(frame); else resolve();
+      }
+      liveRaf=requestAnimationFrame(frame);
+    });
+  }
+  async function animatePens(i,m,wS){
+    const scEl=conf.querySelector(`.cscore[data-sc="${i}"]`); if(!scEl) return;
+    const reg=scEl.textContent; let pw=0,pl=0;
+    while((pw<m.sw || pl<m.sl) && !liveAbort){
+      if(pw<m.sw){ pw++; const a=wS==="a"?pw:pl,b=wS==="a"?pl:pw; flashScore(i,`${reg} (${a}:${b} n.E.)`); await liveSleep(430); }
+      if(pl<m.sl && !liveAbort){ pl++; const a=wS==="a"?pw:pl,b=wS==="a"?pl:pw; flashScore(i,`${reg} (${a}:${b} n.E.)`); await liveSleep(430); }
+    }
+  }
+  async function playRound(label, matches, durSec){
+    liveMatches=matches;
+    const evs=matches.map(genEvents);
+    const maxMin = matches.some(m=>m.phase!=="reg") ? 120 : 90;
+    liveRound.textContent=label;
+    conf.innerHTML=matches.map((m,i)=>confRow(i,m)).join("");
+    await animateRound(matches, evs, maxMin, durSec*1000*(maxMin/90));
+    for(let i=0;i<matches.length && !liveAbort;i++) if(matches[i].phase==="pen"){ await animatePens(i,matches[i],evs[i].wS); markDone(matches[i],i); }
+  }
+  function renderLiveFinish(sim){
+    const fr=(pos,idx,gold)=>{ const t=TEAMS[idx];
+      return `<div class="frow${gold?' gold':''}"><span class="fp">${pos}</span><span class="ff">${t.f}</span><span class="fn">${liveLabel(t)}</span></div>`; };
+    $("liveFinish").innerHTML = `<div class="cup">🏆</div><div class="finish"><div class="ft">Endstand</div>`
+      + fr(1,sim.champ,true)+fr(2,sim.vize,false)+fr(3,sim.third,false)+fr(4,sim.fourth,false)+`</div>`;
+  }
+  async function playLive(){
+    const sim=runOnce(); lastSim=sim; liveSim=sim; rolledOnce=true;
+    liveAbort=false; liveRunning=true; liveBtn.textContent="⏹ Stopp";
+    $("liveFinish").innerHTML="";
+    const durSec=+liveDur.value, nR=sim.rounds.length;
+    for(let r=0; r<nR && !liveAbort; r++){
+      await playRound(RLABEL[r], sim.rounds[r], durSec);
+      if(r<nR-1 && !liveAbort) await liveSleep(950);
+      if(r===nR-2 && !liveAbort){                          // nach dem Halbfinale
+        await playRound("Spiel um Platz 3", [sim.third3], durSec);
+        await liveSleep(950);
+      }
+    }
+    if(!liveAbort){ liveRound.textContent="🏆 Endstand"; liveClock.textContent=""; renderLiveFinish(sim); renderTree(sim); }
+    liveRunning=false; liveBtn.textContent="▶ Anpfiff"; liveMatches=null;
+  }
+  liveBtn.addEventListener("click",()=>{ if(liveRunning) stopLive(); else playLive(); });
 
   // Zoom Turnierbaum (100% = passt komplett; höher = Details, scrollbar)
   const tzSld=$("tzSld");
@@ -1513,14 +1689,14 @@
   function setNameMode(m){
     if(m===nameMode) return;
     nameMode = m;
-    document.querySelectorAll(".nmtog button").forEach(b=>
+    document.querySelectorAll(".nmtog button[data-mode]").forEach(b=>
       b.classList.toggle("on", b.dataset.mode===m));
     if(lastProb) renderProb(lastProb.data, lastProb.ms);
     if(lastSim)  renderTree(lastSim);
   }
   document.querySelectorAll(".nmtog").forEach(g=>
     g.addEventListener("click", e=>{
-      const b=e.target.closest("button"); if(!b) return;
+      const b=e.target.closest("button"); if(!b || !b.dataset.mode) return;
       setNameMode(b.dataset.mode);
     }));
 
