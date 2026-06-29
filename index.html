@@ -25,10 +25,17 @@
   .frames{flex:1 1 auto; position:relative; min-height:0;}
   .frame{position:absolute; inset:0; width:100%; height:100%; border:0; display:block; background:#16245e;}
   .frame.hidden{display:none;}
-  .bell{flex:0 0 auto; width:46px; padding:10px 0; border-radius:11px;
+  .bell{flex:0 0 auto; position:relative; width:46px; padding:10px 0; border-radius:11px;
     border:1px solid rgba(160,190,255,.22); background:rgba(255,255,255,.04);
     color:#8190c4; font-size:18px; cursor:pointer; transition:background .15s,color .15s;}
   .bell.on{background:rgba(244,198,74,.18); color:#f4c64a; border-color:#f4c64a;}
+  .bell:disabled{opacity:.55;}
+  /* roter Strich = Benachrichtigungen AUS (verschwindet im An-Zustand) */
+  .bell::after{content:""; position:absolute; left:50%; top:50%; width:30px; height:3px;
+    border-radius:2px; background:#ff5a5a; box-shadow:0 0 0 1.5px rgba(14,22,52,.7);
+    transform:translate(-50%,-50%) rotate(45deg); opacity:1;
+    transition:opacity .15s; pointer-events:none;}
+  .bell.on::after{opacity:0;}
   .push-ov{position:fixed; inset:0; z-index:50; display:flex; align-items:center;
     justify-content:center; padding:24px; background:rgba(6,10,28,.72);}
   .push-ov.hidden{display:none;}
@@ -54,7 +61,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v3.8</span>
+    <span id="vstamp">v3.9</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -1805,7 +1812,7 @@
         openOv("Push wird in diesem Kontext nicht unterst\u00fctzt. Auf dem iPhone: Teilen-Symbol \u2192 \u201eZum Home-Bildschirm\u201c, dann die App von dort \u00f6ffnen.");return;}
       if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!standalone){
         openOv("Bitte zuerst \u00fcber das Teilen-Symbol \u201eZum Home-Bildschirm\u201c hinzuf\u00fcgen und die App von dort (Vollbild) \u00f6ffnen. Dann hier erneut tippen.");return;}
-      navigator.serviceWorker.register("sw.js").then(function(reg){
+      return navigator.serviceWorker.register("sw.js").then(function(reg){
         return navigator.serviceWorker.ready.then(function(){return reg;});
       }).then(function(reg){
         return Notification.requestPermission().then(function(perm){
@@ -1829,15 +1836,29 @@
     }
     function disablePush(){
       bell.classList.remove("on");
-      if(!("serviceWorker" in navigator)){ openOv("Benachrichtigungen ausgeschaltet."); return; }
-      navigator.serviceWorker.getRegistration().then(function(reg){
-        if(reg&&reg.pushManager){
-          reg.pushManager.getSubscription().then(function(s){ if(s) s.unsubscribe().catch(function(){}); });
-        }
-      }).catch(function(){});
-      openOv("Benachrichtigungen ausgeschaltet \u2713  Du bekommst keine Tor-Nachrichten mehr. Zum Wiedereinschalten einfach erneut auf die Glocke tippen.");
+      if(!("serviceWorker" in navigator)){ openOv("Benachrichtigungen ausgeschaltet."); return Promise.resolve(); }
+      return navigator.serviceWorker.getRegistration().then(function(reg){
+        if(!(reg&&reg.pushManager)) return;
+        return reg.pushManager.getSubscription().then(function(s){
+          if(!s) return;
+          var ep=s.endpoint;
+          // erst dem Server das Abo abmelden (best effort), dann lokal kündigen
+          var notify = WORKER_URL
+            ? fetch(WORKER_URL.replace(/\/$/,"")+"/unsubscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:ep})}).catch(function(){})
+            : Promise.resolve();
+          return notify.then(function(){ return s.unsubscribe().catch(function(){}); });
+        });
+      }).catch(function(){}).then(function(){
+        openOv("Benachrichtigungen ausgeschaltet \u2713  Du bekommst keine Tor-Nachrichten mehr. Zum Wiedereinschalten einfach erneut auf die Glocke tippen.");
+      });
     }
-    function togglePush(){ if(bell.classList.contains("on")) disablePush(); else enablePush(); }
+    var pushBusy=false;   // Sperre: verhindert zweite parallele enable/disable-Kette (Doppeltippen -> Doppel-Abo)
+    function togglePush(){
+      if(pushBusy) return;
+      pushBusy=true; bell.disabled=true;
+      var run = bell.classList.contains("on") ? disablePush() : enablePush();
+      Promise.resolve(run).catch(function(){}).then(function(){ pushBusy=false; bell.disabled=false; });
+    }
     bell.addEventListener("click",togglePush);
     if("serviceWorker" in navigator){navigator.serviceWorker.getRegistration().then(function(reg){if(reg&&reg.pushManager)reg.pushManager.getSubscription().then(function(s){if(s)bell.classList.add("on");});}).catch(function(){});}
   })();
