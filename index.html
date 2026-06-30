@@ -514,19 +514,21 @@
   // Spieldaten sind deutsche Wandzeit; "heute"/"morgen" in MESZ (UTC+2, WM im Sommer) berechnen.
   let dayMap = { map:{}, markedRounds:new Set() };
   function buildDayMap(){
-    const deN = new Date(Date.now() + 2*3600*1000);
-    const tD=deN.getUTCDate(), tM=deN.getUTCMonth()+1;
-    const deT = new Date(Date.now() + 2*3600*1000 + 86400000);
-    const oD=deT.getUTCDate(), oM=deT.getUTCMonth()+1;
-    const whenOf=(dd)=>{ const m=String(dd||"").match(/(\d{1,2})\.(\d{1,2})\./); if(!m) return null;
-      const d=+m[1], mo=+m[2];
-      if(d===tD&&mo===tM) return 'today'; if(d===oD&&mo===oM) return 'tomorrow'; return null; };
+    // "Spieltag" = Kalendertag von (Anpfiff − 6 h): US-Spiele, die in DE erst nach Mitternacht
+    // bis 06:00 MESZ laufen, zählen noch zum Spieltag des Vorabends. Gleiche Regel für "jetzt".
+    const SHIFT = 6*3600*1000, TZ = 2*3600*1000;   // 6 h Spieltag-Grenze, MESZ = UTC+2
+    const dayKey = ts => { const d=new Date(ts + TZ - SHIFT);   // MESZ-Wandzeit, dann 6 h zurück
+      return d.getUTCFullYear()*10000 + (d.getUTCMonth()+1)*100 + d.getUTCDate(); };
+    const todayKey = dayKey(Date.now());
+    const tomoKey  = dayKey(Date.now() + 86400000);
+    const whenOf = ts => { const k=dayKey(ts); return k===todayKey?'today':(k===tomoKey?'tomorrow':null); };
     const items=[];
     for(let r=0;r<COUNTS.length;r++) for(let p=0;p<COUNTS[r];p++){
-      const w=whenOf(dts[r][p][0]); if(!w) continue;
-      items.push({key:r+"-"+p, ts:(koTs(dts[r][p][0],dts[r][p][1]) ?? 0), when:w});
+      const ko=koTs(dts[r][p][0], dts[r][p][1]); if(ko===null) continue;
+      const w=whenOf(ko); if(!w) continue;
+      items.push({key:r+"-"+p, ts:ko, when:w});
     }
-    { const w=whenOf(dt3[0]); if(w) items.push({key:"t3", ts:(koTs(dt3[0],dt3[1]) ?? 0), when:w}); }
+    { const ko=koTs(dt3[0],dt3[1]); if(ko!==null){ const w=whenOf(ko); if(w) items.push({key:"t3", ts:ko, when:w}); } }
     const map={};
     ['today','tomorrow'].forEach(w=>{
       const g=items.filter(x=>x.when===w).sort((a,b)=>a.ts-b.ts);
