@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.4</span>
+    <span id="vstamp">v4.5</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -207,6 +207,7 @@
     font-size:13px; font-weight:700; text-align:center; padding:0 3px;
     display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box;}
   .slot .score.empty{border-color:transparent; background:transparent;}
+  .score .pk{font-size:9px; font-weight:700; opacity:.78; margin-left:1px;}
   .score.flash{ animation: scflash 1.2s ease; }
   @keyframes scflash{ 0%,35%{ background:var(--gold); color:#1a1305; border-color:var(--gold);
     box-shadow:0 0 0 2px rgba(244,198,74,.5); } 100%{} }
@@ -351,8 +352,10 @@
   const scores = COUNTS.map(c => Array.from({length:c}, () => ["",""]));
   // telapsed[r][p] = time_elapsed der Quelle ("notstarted" | "finished" | Spielminute …); "" = noch unbekannt
   const telapsed = COUNTS.map(c => Array.from({length:c}, () => ""));
-  // penLabel[r][p] = Zusatz bei K.o.-Entscheidung ("3:4 i.E." | "n.V." | ""); aus Vergleichsquelle, nicht gespeichert
+  // penLabel[r][p] = Zusatz bei K.o.-Entscheidung ("n.V." | ""); aus Vergleichsquelle, nicht gespeichert
   const penLabel = COUNTS.map(c => new Array(c).fill(""));
+  // penScore[r][p] = [Elfmeter oben, Elfmeter unten] (in der Box angezeigt), sonst null
+  const penScore = COUNTS.map(c => new Array(c).fill(null));
   // Offizielle Termine WM 2026 (deutsche Zeit / MESZ), zugeordnet zur Bracket-Position.
   // Runde 0 in Setzliste-Reihenfolge; Folgerunden über Sieger-Nummern zugeordnet u. mehrfach verifiziert.
   const DTS = [
@@ -377,7 +380,8 @@
   let official3 = false;   // echtes Ergebnis Spiel um Platz 3 -> gesperrt
   let score3 = ["",""];    // Ergebnis Spiel um Platz 3
   let telapsed3 = "";      // time_elapsed Spiel um Platz 3
-  let penLabel3 = "";      // K.o.-Zusatz Spiel um Platz 3 ("3:4 i.E." | "n.V." | "")
+  let penLabel3 = "";      // K.o.-Zusatz Spiel um Platz 3 ("n.V." | "")
+  let penScore3 = null;    // [Elfmeter oben, Elfmeter unten] Spiel um Platz 3, sonst null
   let dt3 = ["18.07.","23:00"];   // Datum/Uhrzeit Spiel um Platz 3
   let zoom = 0.7;          // Zoomfaktor (+/- Tasten) – Start etwas kleiner, beide Spalten sichtbar
 
@@ -446,8 +450,9 @@
       official[rr][pp]=false;        // gelöschtes Folge-Ergebnis ist nicht mehr "echt"
       telapsed[rr][pp]="";           // Status gehört zur alten Paarung -> löschen
       penLabel[rr][pp]="";           // K.o.-Zusatz gehört zur alten Paarung -> löschen
+      penScore[rr][pp]=null;
     }
-    third=null; score3=["",""]; official3=false; telapsed3=""; penLabel3="";   // HF-Verlierer können sich geändert haben
+    third=null; score3=["",""]; official3=false; telapsed3=""; penLabel3=""; penScore3=null;   // HF-Verlierer können sich geändert haben
   }
 
   function setWinner(r,p,side){
@@ -500,7 +505,8 @@
     else if(w!==null) cls+=" loser";
     if(official[r][p]) cls+=" locked";
     const st=matchStatus(official[r][p], dts[r][p][0], dts[r][p][1], telapsed[r][p]);
-    const disp=(st==='live'||st==='done') ? (val||"–") : "–";   // vor Anpfiff keine 0:0
+    let disp=(st==='live'||st==='done') ? (val||"–") : "–";   // vor Anpfiff keine 0:0
+    if(st==='done' && penScore[r][p]) disp += ` <span class="pk">(${penScore[r][p][side]})</span>`;
     return `<div class="${cls}" data-r="${r}" data-p="${p}" data-s="${side}">`
          + `<span class="flag">${t.f}</span><span class="nm">${t.n}</span>`
          + `<span class="score" data-fid="s-${r}-${p}-${side}">${disp}</span></div>`;
@@ -535,9 +541,11 @@
            + `<span class="score empty"></span></div>`;
       let cls="slot"+(third===side?" win":(third!==null?" loser":""));
       if(official3) cls+=" locked";
+      let d3=showSc?(val||"–"):"–";
+      if(st==='done' && penScore3) d3 += ` <span class="pk">(${penScore3[side]})</span>`;
       return `<div class="${cls}" data-t3="${side}"><span class="flag">${team.f}</span>`
            + `<span class="nm">${team.n}</span>`
-           + `<span class="score" data-fid="s3-${side}">${showSc?(val||"–"):"–"}</span></div>`;
+           + `<span class="score" data-fid="s3-${side}">${d3}</span></div>`;
     };
     const stCls=(st==='soon')?' soon':(st==='live')?' live':'';
     const badge=(st==='live')?`<span class="livebadge">● LIVE</span>`:'';
@@ -798,9 +806,9 @@
                       const a=+arr[0], b=+arr[1]; if(Number.isNaN(a)||Number.isNaN(b)) return null;
                       return flip?[b,a]:[a,b]; };
     const pen=pick(m.score.p), et=pick(m.score.et), ft=pick(m.score.ft);
-    if(pen && pen[0]!==pen[1]) return {win:pen[0]>pen[1]?0:1, label:pen[0]+":"+pen[1]+" i.E."};
-    if(et  && et[0]!==et[1])   return {win:et[0]>et[1]?0:1,   label:"n.V."};
-    if(ft  && ft[0]!==ft[1])   return {win:ft[0]>ft[1]?0:1,   label:""};
+    if(pen && pen[0]!==pen[1]) return {win:pen[0]>pen[1]?0:1, label:pen[0]+":"+pen[1]+" i.E.", pen:pen};
+    if(et  && et[0]!==et[1])   return {win:et[0]>et[1]?0:1,   label:"n.V.", pen:null};
+    if(ft  && ft[0]!==ft[1])   return {win:ft[0]>ft[1]?0:1,   label:"", pen:null};
     return null;
   }
   // Geht den gespeicherten Stand durch und löst jedes beendete Tor-Unentschieden über die Vergleichsquelle auf.
@@ -809,20 +817,25 @@
     if(!ofMatches) return false;
     let ch=false;
     const tie=(a,b)=> a!=="" && b!=="" && (+a)===(+b);
+    const sig=arr=> arr ? arr.join(":") : "";   // Array-Vergleich über String
     for(let r=0;r<COUNTS.length;r++){
       for(let p=0;p<COUNTS[r];p++){
         if(!tie(scores[r][p][0], scores[r][p][1])) continue;
         const tA=slotTeam(r,p,0), tB=slotTeam(r,p,1); if(!tA||!tB) continue;
         const res=ofResolve(tA.id, tB.id); if(!res) continue;
         if(winner[r][p]!==res.win){ winner[r][p]=res.win; invalidateAfter(r,p); ch=true; }
-        if(penLabel[r][p]!==res.label){ penLabel[r][p]=res.label; ch=true; }
+        const lbl=res.pen ? "" : res.label;   // Elfmeter -> Zahlen in der Box (kein Label); Verlängerung -> "n.V."
+        if(penLabel[r][p]!==lbl){ penLabel[r][p]=lbl; ch=true; }
+        if(sig(penScore[r][p])!==sig(res.pen)){ penScore[r][p]=res.pen; ch=true; }
       }
     }
     if(tie(score3[0], score3[1])){
       const lA=loserTeam(3,0), lB=loserTeam(3,1);
       if(lA&&lB){ const res=ofResolve(lA.id, lB.id);
         if(res){ if(third!==res.win){ third=res.win; ch=true; }
-                 if(penLabel3!==res.label){ penLabel3=res.label; ch=true; } } }
+                 const lbl=res.pen ? "" : res.label;
+                 if(penLabel3!==lbl){ penLabel3=lbl; ch=true; }
+                 if(sig(penScore3)!==sig(res.pen)){ penScore3=res.pen; ch=true; } } }
     }
     return ch;
   }
