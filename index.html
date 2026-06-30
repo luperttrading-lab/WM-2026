@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.8</span>
+    <span id="vstamp">v4.9</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -187,9 +187,21 @@
     letter-spacing:.2px; font-variant-numeric:tabular-nums;}
 
   .pair{flex:1 1 auto; border:1.6px solid var(--card-bd); border-radius:9px;
-    overflow:hidden; background:var(--card); backdrop-filter:blur(2px);}
+    overflow:hidden; background:var(--card); backdrop-filter:blur(2px); display:flex;}
+  .teams{flex:1 1 auto; min-width:0;}
   .paircol{flex:1 1 auto; min-width:0; display:flex; flex-direction:column;}
   .paircol > .pair{flex:0 0 auto;}
+  /* Heute/Morgen-Streifen (Stil A, heller Block) + Tagesnummer */
+  .accent{flex:0 0 24px; display:flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:900; font-variant-numeric:tabular-nums; line-height:1;}
+  .pair.heute{border-color:rgba(244,198,74,.85);}
+  .pair.morgen{border-color:rgba(111,160,240,.85);}
+  .pair.heute .accent{background:rgba(244,198,74,.15); color:var(--gold); border-right:1.6px solid rgba(244,198,74,.85);}
+  .pair.morgen .accent{background:rgba(111,160,240,.15); color:#7fb0ff; border-right:1.6px solid rgba(111,160,240,.85);}
+  /* Variante 2: leere Kacheln ohne Senkrechte, Flaggen fluchten, Trennlinie läuft voll durch */
+  .pair.reserve .slot{padding-left:31px;}
+  .dt .d.today{color:var(--gold); font-weight:800;}
+  .dt .d.tomorrow{color:#7fb0ff; font-weight:800;}
   /* K.o.-Entscheidung: 1-3 gestaffelte Ergebnis-Kästchen, letztes rot/grün */
   .slot .boxes{flex:0 0 auto; display:flex; gap:4px; margin-left:5px;}
   .slot .bx{width:25px; height:22px; border:1px solid var(--card-bd); border-radius:5px;
@@ -498,6 +510,47 @@
     return 'upcoming';
   }
 
+  // ---- Heute/Morgen-Markierung: welche Spiele sind heute/morgen, + Nummer des Tages ----
+  // Spieldaten sind deutsche Wandzeit; "heute"/"morgen" in MESZ (UTC+2, WM im Sommer) berechnen.
+  let dayMap = { map:{}, markedRounds:new Set() };
+  function buildDayMap(){
+    const deN = new Date(Date.now() + 2*3600*1000);
+    const tD=deN.getUTCDate(), tM=deN.getUTCMonth()+1;
+    const deT = new Date(Date.now() + 2*3600*1000 + 86400000);
+    const oD=deT.getUTCDate(), oM=deT.getUTCMonth()+1;
+    const whenOf=(dd)=>{ const m=String(dd||"").match(/(\d{1,2})\.(\d{1,2})\./); if(!m) return null;
+      const d=+m[1], mo=+m[2];
+      if(d===tD&&mo===tM) return 'today'; if(d===oD&&mo===oM) return 'tomorrow'; return null; };
+    const items=[];
+    for(let r=0;r<COUNTS.length;r++) for(let p=0;p<COUNTS[r];p++){
+      const w=whenOf(dts[r][p][0]); if(!w) continue;
+      items.push({key:r+"-"+p, ts:(koTs(dts[r][p][0],dts[r][p][1]) ?? 0), when:w});
+    }
+    { const w=whenOf(dt3[0]); if(w) items.push({key:"t3", ts:(koTs(dt3[0],dt3[1]) ?? 0), when:w}); }
+    const map={};
+    ['today','tomorrow'].forEach(w=>{
+      const g=items.filter(x=>x.when===w).sort((a,b)=>a.ts-b.ts);
+      g.forEach((x,i)=>{ map[x.key]={when:w, num: g.length>1 ? i+1 : null}; });
+    });
+    const markedRounds=new Set();
+    items.forEach(it=>markedRounds.add(it.key==='t3' ? 4 : (+it.key.split('-')[0])));
+    return { map, markedRounds };
+  }
+  // baut die Streifen-/Datum-Teile für eine Kachel (key = "r-p" oder "t3"); rnd = Runde für Platz-Reservierung
+  function dayParts(key, dateLabel, rnd){
+    const di = dayMap.map[key];
+    if(di){
+      const cls = di.when==='today' ? 'heute' : 'morgen';
+      const dcls = di.when==='today' ? 'd today' : 'd tomorrow';
+      const word = di.when==='today' ? 'Heute' : 'Morgen';
+      return { pairCls:'pair '+cls, accent:`<div class="accent">${di.num??''}</div>`,
+               dLabel:word, dCls:dcls };
+    }
+    const reserve = dayMap.markedRounds.has(rnd);   // nur in Runden mit heute/morgen-Spiel
+    return { pairCls:'pair plain'+(reserve?' reserve':''), accent:'',
+             dLabel:dateLabel, dCls:'d' };
+  }
+
   function slotHTML(r,p,side){
     const t=slotTeam(r,p,side);
     const w=winner[r][p];
@@ -538,12 +591,14 @@
     const st=matchStatus(official[r][p], dts[r][p][0], dts[r][p][1], telapsed[r][p]);
     const stCls=(st==='soon')?' soon':(st==='live')?' live':'';
     const badge=(st==='live')?`<span class="livebadge">● LIVE</span>`:'';
+    const dp=dayParts(r+"-"+p, d, r);
     return `<div class="match${stCls}" data-mr="${r}" data-mp="${p}">`
          + `<div class="dt">`
-         + `<span class="d">${d}</span>`
+         + `<span class="${dp.dCls}">${dp.dLabel}</span>`
          + `<span class="t">${t}</span>`
          + `</div>${badge}`
-         + `<div class="paircol"><div class="pair">${slotHTML(r,p,0)}${slotHTML(r,p,1)}</div>`
+         + `<div class="paircol"><div class="${dp.pairCls}">${dp.accent}`
+         + `<div class="teams">${slotHTML(r,p,0)}${slotHTML(r,p,1)}</div></div>`
          + (st==='done' ? koLabelRow(koStages[r][p]) : "")
          + `</div></div>`;
   }
@@ -576,20 +631,23 @@
     };
     const stCls=(st==='soon')?' soon':(st==='live')?' live':'';
     const badge=(st==='live')?`<span class="livebadge">● LIVE</span>`:'';
+    const dp=dayParts("t3", d, 4);
     return `<div class="match3">`
          + `<div class="m3lbl">Spiel um Platz 3</div>`
          + `<div class="match${stCls}">`
          + `<div class="dt">`
-         + `<span class="d">${d}</span>`
+         + `<span class="${dp.dCls}">${dp.dLabel}</span>`
          + `<span class="t">${t}</span>`
          + `</div>${badge}`
-         + `<div class="paircol"><div class="pair">${row(lA,0)}${row(lB,1)}</div>`
+         + `<div class="paircol"><div class="${dp.pairCls}">${dp.accent}`
+         + `<div class="teams">${row(lA,0)}${row(lB,1)}</div></div>`
          + (st==='done' ? koLabelRow(koStages3) : "")
          + `</div></div></div>`;
   }
 
 
   function render(){
+    dayMap = buildDayMap();
     let html="";
     for(let r=0;r<COUNTS.length;r++){
       let inner=`<div class="rlabel">${LABELS[r]}</div>`;
