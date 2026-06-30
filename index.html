@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.2</span>
+    <span id="vstamp">v4.3</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -746,9 +746,15 @@
         if(put(g, tA, `s-${r}-${p}`,
               v=>{scores[r][p]=v;}, ()=>scores[r][p],
               w=>{winner[r][p]=w; invalidateAfter(r,p);}, ()=>winner[r][p])) changed=true;
-        if(isFin(g) && winner[r][p]===null){          // beendetes Unentschieden -> Sieger aus Vergleichsquelle (Elfmeter/Verl.)
-          const res=ofResolve(tA.id, tB.id);
-          if(res){ winner[r][p]=res.win; invalidateAfter(r,p); penLabel[r][p]=res.label; changed=true; }
+        if(isFin(g)){                                  // beendet + auf Tore unentschieden -> Elfmeter/Verl. aus Vergleichsquelle
+          const a=scores[r][p][0], b=scores[r][p][1];
+          if(a!=="" && b!=="" && +a===+b){
+            const res=ofResolve(tA.id, tB.id);
+            if(res){
+              if(winner[r][p]!==res.win){ winner[r][p]=res.win; invalidateAfter(r,p); changed=true; }
+              if(penLabel[r][p]!==res.label){ penLabel[r][p]=res.label; changed=true; }
+            }
+          }
         }
       }
     }
@@ -764,9 +770,15 @@
         const st3=matchStatus(official3, dt3[0], dt3[1], telapsed3);
         if(st3==='live' || st3==='done'){
           if(put(g, lA, "s3", v=>{score3=v;}, ()=>score3, w=>{third=w;}, ()=>third)) changed=true;
-          if(isFin(g) && third===null){
-            const res=ofResolve(lA.id, lB.id);
-            if(res){ third=res.win; penLabel3=res.label; changed=true; }
+          if(isFin(g)){
+            const a=score3[0], b=score3[1];
+            if(a!=="" && b!=="" && +a===+b){
+              const res=ofResolve(lA.id, lB.id);
+              if(res){
+                if(third!==res.win){ third=res.win; changed=true; }
+                if(penLabel3!==res.label){ penLabel3=res.label; changed=true; }
+              }
+            }
           }
         }
       }
