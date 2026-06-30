@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.3</span>
+    <span id="vstamp">v4.4</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -746,16 +746,6 @@
         if(put(g, tA, `s-${r}-${p}`,
               v=>{scores[r][p]=v;}, ()=>scores[r][p],
               w=>{winner[r][p]=w; invalidateAfter(r,p);}, ()=>winner[r][p])) changed=true;
-        if(isFin(g)){                                  // beendet + auf Tore unentschieden -> Elfmeter/Verl. aus Vergleichsquelle
-          const a=scores[r][p][0], b=scores[r][p][1];
-          if(a!=="" && b!=="" && +a===+b){
-            const res=ofResolve(tA.id, tB.id);
-            if(res){
-              if(winner[r][p]!==res.win){ winner[r][p]=res.win; invalidateAfter(r,p); changed=true; }
-              if(penLabel[r][p]!==res.label){ penLabel[r][p]=res.label; changed=true; }
-            }
-          }
-        }
       }
     }
     // Spiel um Platz 3
@@ -770,19 +760,10 @@
         const st3=matchStatus(official3, dt3[0], dt3[1], telapsed3);
         if(st3==='live' || st3==='done'){
           if(put(g, lA, "s3", v=>{score3=v;}, ()=>score3, w=>{third=w;}, ()=>third)) changed=true;
-          if(isFin(g)){
-            const a=score3[0], b=score3[1];
-            if(a!=="" && b!=="" && +a===+b){
-              const res=ofResolve(lA.id, lB.id);
-              if(res){
-                if(third!==res.win){ third=res.win; changed=true; }
-                if(penLabel3!==res.label){ penLabel3=res.label; changed=true; }
-              }
-            }
-          }
         }
       }
     }
+    if(resolvePenalties()) changed=true;   // beendete Unentschieden über Vergleichsquelle auflösen
     return changed;
   }
 
@@ -798,7 +779,11 @@
   let ofMatches = null;
   function ofLoad(){
     fetch(OF_URL, {cache:"no-store"}).then(r=>r.json()).then(d=>{
-      if(d && Array.isArray(d.matches)){ ofMatches = d.matches; fetchLive(); }  // nachladen -> sofort neu abgleichen
+      if(d && Array.isArray(d.matches)){
+        ofMatches = d.matches;
+        if(resolvePenalties()){ saveState(); }   // sofort auf dem gespeicherten Stand auflösen
+        render();
+      }
     }).catch(()=>{ /* Vergleichsquelle offline -> Primärquelle bleibt maßgeblich */ });
   }
   // Liefert {win:0|1, label} für ein beendetes Unentschieden (Sieger aus Elfmeter > Verlängerung > regulär), sonst null
@@ -817,6 +802,29 @@
     if(et  && et[0]!==et[1])   return {win:et[0]>et[1]?0:1,   label:"n.V."};
     if(ft  && ft[0]!==ft[1])   return {win:ft[0]>ft[1]?0:1,   label:""};
     return null;
+  }
+  // Geht den gespeicherten Stand durch und löst jedes beendete Tor-Unentschieden über die Vergleichsquelle auf.
+  // Läuft unabhängig vom Live-Sync -> Label kommt, sobald openfootball geladen ist, egal was die Primärquelle liefert.
+  function resolvePenalties(){
+    if(!ofMatches) return false;
+    let ch=false;
+    const tie=(a,b)=> a!=="" && b!=="" && (+a)===(+b);
+    for(let r=0;r<COUNTS.length;r++){
+      for(let p=0;p<COUNTS[r];p++){
+        if(!tie(scores[r][p][0], scores[r][p][1])) continue;
+        const tA=slotTeam(r,p,0), tB=slotTeam(r,p,1); if(!tA||!tB) continue;
+        const res=ofResolve(tA.id, tB.id); if(!res) continue;
+        if(winner[r][p]!==res.win){ winner[r][p]=res.win; invalidateAfter(r,p); ch=true; }
+        if(penLabel[r][p]!==res.label){ penLabel[r][p]=res.label; ch=true; }
+      }
+    }
+    if(tie(score3[0], score3[1])){
+      const lA=loserTeam(3,0), lB=loserTeam(3,1);
+      if(lA&&lB){ const res=ofResolve(lA.id, lB.id);
+        if(res){ if(third!==res.win){ third=res.win; ch=true; }
+                 if(penLabel3!==res.label){ penLabel3=res.label; ch=true; } } }
+    }
+    return ch;
   }
   function fetchLive(){
     flashFids.length = 0;
