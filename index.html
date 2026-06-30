@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.12</span>
+    <span id="vstamp">v4.13</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -1097,14 +1097,14 @@
   .prow.top{border-color:rgba(244,198,74,.3);}
   .phead .pf,.prow .pf{flex:0 0 17px; font-size:13px; text-align:center;}
   /* Team-Spalte: Kürzel fest schmal | Name flexibel mit Ellipsis */
-  .phead .pteam,.prow .pteam{flex:0 0 84px; min-width:0; font-weight:700; color:var(--txt);
+  .phead .pteam,.prow .pteam{flex:0 0 100px; min-width:0; font-weight:700; color:var(--txt);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .prow.top .pteam{color:var(--gold);}
   .phead .pcol,.prow .pcol{flex:0 0 19px; text-align:right; font-variant-numeric:tabular-nums;}
   .phead .pcolf,.prow .pcolf{flex:0 0 24px; text-align:right; font-variant-numeric:tabular-nums;}
   .phead .pcolf{text-align:center;}   /* "F" mittig über der breiteren Dezimalzahl */
   .prow .pcol,.prow .pcolf{color:var(--muted);}
-  .phead .pwm,.prow .pwm{flex:0 0 30px; text-align:right; font-weight:800; font-size:12px;
+  .phead .pwm,.prow .pwm{flex:0 0 34px; text-align:right; font-weight:800; font-size:12px;
     font-variant-numeric:tabular-nums; color:var(--txt);}
   .prow.top .pwm{color:var(--gold);}
   /* Trichter-Balken: in beiden Modi gleich (nimmt Restplatz) */
@@ -1113,9 +1113,8 @@
   .fbar{display:block; width:100%; height:7px; border-radius:3px;}
 
   /* ----- Runden-Kästchen + bedingte Prognose (Jetzt/Start) ----- */
-  .prow .pteam{flex:1 1 auto;}            /* Name nimmt jetzt den Restplatz */
-  .prow .pwm{flex:0 0 32px;}
-  .prow .pfunnel{flex:0 0 40px;}
+  /* Kopf & Daten nutzen identische Spaltenbreiten (oben definiert) -> Zahlen fluchten unter den
+     Kürzeln; Name fest, Balken (pfunnel) nimmt flex:1 den Restplatz rechts. */
   .rnd{flex:0 0 20px; text-align:center; font-size:9px; font-weight:800; letter-spacing:.02em;}
   .rnd.active{color:var(--gold);} .rnd.gone{color:#d97a6e;}
   .boxes{flex:0 0 auto; display:flex; gap:2px; margin-right:1px;}
