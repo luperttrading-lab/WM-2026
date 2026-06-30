@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.11</span>
+    <span id="vstamp">v4.12</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -210,7 +210,7 @@
     font-variant-numeric:tabular-nums;}
   .slot .bx.win{color:#8bd6a3; background:rgba(95,200,140,.16); border-color:rgba(120,210,160,.5);}
   .slot .bx.los{color:#e0a1a1; background:rgba(220,110,110,.15); border-color:rgba(222,135,135,.45);}
-  .lblrow{display:flex; align-items:flex-start; padding:3px 8.6px 0;}   /* 8.6 = slot-Padding 7 + Pair-Rahmen 1.6 -> fluchtet mit Kästchen */
+  .lblrow{display:flex; align-items:flex-start; padding:3px 8.6px 0; height:15px; box-sizing:border-box;}   /* 8.6 = slot-Padding 7 + Pair-Rahmen 1.6 -> fluchtet mit Kästchen */
   .lblrow .sp{flex:1 1 auto;}
   .lblrow .lbls{flex:0 0 auto; display:flex; gap:4px; margin-left:5px;}
   .lblrow .lb{width:25px; text-align:center; font-size:9px; font-weight:800;
@@ -582,9 +582,10 @@
          + `<span class="flag">${t.f}</span><span class="nm">${t.n}</span>${scHTML}</div>`;
   }
 
-  // Label-Zeile unter der Paarung, exakt unter die Kästchen ausgerichtet (nur ab 2 Kästchen)
+  // Label-Zeile unter der Paarung. Immer vorhanden (reserviert Höhe, damit alle Paarungen gleich hoch
+  // sind und die Abstände konstant bleiben); Labels n.V./i.E. nur bei gestaffelten Kästchen.
   function koLabelRow(stg){
-    if(!stg || stg.length<2) return "";
+    if(!stg || stg.length<2) return `<div class="lblrow"></div>`;
     const lbls = stg.map(s=>`<span class="lb ${s.lbl==='n.V.'?'nv':(s.lbl==='i.E.'?'ie':'empty')}">${s.lbl||'·'}</span>`).join("");
     return `<div class="lblrow"><span class="sp"></span><span class="lbls">${lbls}</span></div>`;
   }
@@ -601,7 +602,7 @@
          + `</div>${badge}`
          + `<div class="paircol"><div class="${dp.pairCls}">${dp.accent}`
          + `<div class="teams">${slotHTML(r,p,0)}${slotHTML(r,p,1)}</div></div>`
-         + (st==='done' ? koLabelRow(koStages[r][p]) : "")
+         + koLabelRow(koStages[r][p])
          + `</div></div>`;
   }
 
@@ -643,7 +644,7 @@
          + `</div>${badge}`
          + `<div class="paircol"><div class="${dp.pairCls}">${dp.accent}`
          + `<div class="teams">${row(lA,0)}${row(lB,1)}</div></div>`
-         + (st==='done' ? koLabelRow(koStages3) : "")
+         + koLabelRow(koStages3)
          + `</div></div></div>`;
   }
 
