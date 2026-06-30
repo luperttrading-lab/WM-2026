@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.10</span>
+    <span id="vstamp">v4.11</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -1114,14 +1114,21 @@
   /* ----- Runden-Kästchen + bedingte Prognose (Jetzt/Start) ----- */
   .prow .pteam{flex:1 1 auto;}            /* Name nimmt jetzt den Restplatz */
   .prow .pwm{flex:0 0 32px;}
-  .prow .pfunnel{flex:0 0 44px;}
+  .prow .pfunnel{flex:0 0 40px;}
   .rnd{flex:0 0 20px; text-align:center; font-size:9px; font-weight:800; letter-spacing:.02em;}
   .rnd.active{color:var(--gold);} .rnd.gone{color:#d97a6e;}
-  .boxes{flex:0 0 auto; display:flex; gap:2px;}
-  .boxes i{width:9px; height:9px; border-radius:2px; border:1px solid var(--line); background:transparent; display:block;}
+  .boxes{flex:0 0 auto; display:flex; gap:2px; margin-right:1px;}
+  .boxes i{width:7px; height:7px; border-radius:2px; border:1px solid var(--line); background:transparent; display:block;}
   .boxes i.done{background:#5d7fc0; border-color:#5d7fc0;}
   .boxes i.now{background:var(--gold); border-color:var(--gold);}
   .boxes i.out{background:#d97a6e; border-color:#d97a6e;}
+  /* Runden-Zahlen-Spalten AF/VF/HF/F (Layout 1) */
+  .phead .col,.prow .col{flex:0 0 20px; text-align:right; font-size:10.5px;
+    font-variant-numeric:tabular-nums; color:var(--txt);}
+  .phead .col{color:var(--muted); font-weight:700;}
+  .prow .col.done{color:#5a6b92; font-weight:600;}   /* erledigte Runde = 100, dezent */
+  .prow .col.next{color:var(--gold); font-weight:900;}/* nächste Hürde = fett gold */
+  .prow .col.gone{color:#5a6b92; font-weight:600;}    /* ausgeschieden: – */
   .prow.dead{opacity:.6;}
   .prow.dead .pteam{text-decoration:line-through; color:#7d8aad;}
   .prow.dead .pf{filter:grayscale(.85);}
@@ -1594,7 +1601,7 @@
     home:{t:"Heimvorteil", h:`<p>Die Gastgeber <b>USA, Kanada und Mexiko</b> bekommen einen Bonus auf ihre Weltranglisten-Punkte, um den Heimvorteil abzubilden.</p><p>Der Regler stellt die Höhe ein (0–150&nbsp;Punkte). Zur Einordnung: 75&nbsp;Punkte entsprechen etwa dem Abstand zwischen einem starken und einem mittleren Team.</p>`},
     tf:{t:"Turnierfaktor", h:`<div class="iwarn">⚠ Statistisch <b>nicht</b> nachweisbar (I²&nbsp;=&nbsp;0&nbsp;%, p&nbsp;=&nbsp;0,54). Reines „Was wäre, wenn die Punktschätzungen doch etwas bedeuten“. Nur die 19&nbsp;Teams mit ≥&nbsp;5 WM-Teilnahmen erhalten einen Wert; die übrigen 13 bleiben ohne Bonus.</div><p>Der Faktor misst, wie stark ein Team in seinen WM-Spielen vom <b>Elo-Erwartungswert</b> abwich (Elfmeterschießen elo-neutral). Positiv = lief im Turnier über der eigenen Spielstärke; der Wert wird als Elo-Bonus eingerechnet.</p><div class="fp-title">Turnierfaktor je Team · 95 %-Intervalle</div><div id="fpHost"></div><p>Jedes Intervall kreuzt die Null, der gepoolte Effekt (Raute) liegt praktisch bei null — <b>kein nachweisbarer Turnier-Effekt</b>. Deshalb nur ein An/Aus-Schalter, keine Feinregelung.</p>`},
     live:{t:"Live-Modus", h:`<p>Spielt ein komplettes Turnier in Echtzeit ab: Die Tore fallen über die 90 Minuten, danach folgen bei Gleichstand Verlängerung und Elfmeterschießen. Alle Spiele einer Runde laufen gleichzeitig (Konferenz).</p><p>Der Regler stellt ein, wie lange die regulären 90 Minuten dauern (10 s bis 2 min); die Verlängerung kommt zeitlich obendrauf.</p><p><b>Wichtig:</b> Die Ergebnisse sind exakt dieselben wie unter „Ein Turnier" — der Live-Modus zeigt nur, <i>wie</i> sie zustande kommen.</p>`},
-    boxes:{t:"Runden & Kästchen", h:`<p>Hinter jedem Team steht, wie weit es im Turnier ist: das Kürzel der aktuellen Runde und fünf Kästchen — <b>SF</b>&nbsp;Sechzehntelfinale, <b>AF</b>&nbsp;Achtelfinale, <b>VF</b>&nbsp;Viertelfinale, <b>HF</b>&nbsp;Halbfinale, <b>F</b>&nbsp;Finale.</p><p><span class="ibox bd"></span>&nbsp;Runde überstanden &nbsp; <span class="ibox bn"></span>&nbsp;steht dort gerade &nbsp; <span class="ibox bo"></span>&nbsp;dort ausgeschieden &nbsp; <span class="ibox be"></span>&nbsp;noch nicht erreicht.</p><p><b>Jetzt</b> zeigt die Titelchance <i>gegeben die bisherigen echten Ergebnisse</i>: ausgeschiedene Teams stehen auf 0&nbsp;% und rutschen ans Ende, die Chancen der übrigen steigen entsprechend. <b>Start</b> friert die Prognose von vor der K.-o.-Runde ein — als Vergleich, was sich seither verschoben hat.</p>`},
+    boxes:{t:"Kästchen, Spalten & Balken", h:`<p>Vorne fünf Kästchen für den Stand im Turnier: <b>SF</b>&nbsp;Sechzehntelfinale, <b>AF</b>&nbsp;Achtelfinale, <b>VF</b>&nbsp;Viertelfinale, <b>HF</b>&nbsp;Halbfinale, <b>F</b>&nbsp;Finale.</p><p><span class="ibox bd"></span>&nbsp;Runde überstanden &nbsp; <span class="ibox bn"></span>&nbsp;steht dort gerade &nbsp; <span class="ibox bo"></span>&nbsp;dort ausgeschieden &nbsp; <span class="ibox be"></span>&nbsp;noch nicht erreicht.</p><p>Die Spalten <b>AF/VF/HF/F</b> sind die Wahrscheinlichkeiten, die jeweilige Runde zu erreichen, <b>WM</b> die Titelchance (mit Balken rechts). In <b>Jetzt</b> ist die <span style="color:#f4c64a;font-weight:800">nächste Hürde</span> fett-gold (die Chance, die aktuelle Runde zu überstehen), schon erreichte Runden stehen dezent auf 100.</p><p><b>Jetzt</b> rechnet bedingt auf die bisherigen echten Ergebnisse: ausgeschiedene Teams stehen auf 0&nbsp;% und rutschen ans Ende. <b>Start</b> friert die Prognose von vor der K.-o.-Runde ein — alle Zahlen normal, als Vergleich.</p>`},
     tabs:{t:"Die drei Ansichten", h:`<p><b>Titelchancen:</b> Aus zehntausenden simulierten Turnieren wird die Weltmeister-Wahrscheinlichkeit jedes Teams gezählt. <b>Jetzt</b> rechnet bedingt auf die bisherigen echten Ergebnisse, <b>Start</b> zeigt die eingefrorene Prognose von vor der K.-o.-Runde. Die fünf Kästchen hinter jedem Team zeigen die erreichte Runde (Details über das i daneben).</p><p><b>Ein mögliches Turnier:</b> Es wird genau <b>ein</b> Turnier ausgelost und der komplette K.-o.-Baum mit konkreten Ergebnissen gezeigt — ein einzelnes Beispiel, wie die WM ablaufen könnte. Jedes Würfeln liefert ein neues.</p><p><b>Live:</b> Dasselbe Turnier, aber in Echtzeit miterlebt — die Tore fallen über die Spielzeit, mit Verlängerung und Elfmeterschießen.</p>`}
   };
   const imodal=$("imodal"), imodalTitle=$("imodalTitle"), imodalBody=$("imodalBody");
@@ -1615,8 +1622,8 @@
     return `<span class="fbar" style="background:linear-gradient(90deg,#f4c64a 0%,#f4c64a ${w.toFixed(1)}%,#141f33 ${w.toFixed(1)}%)"></span>`;
   }
 
-  // Runden-Kürzel + 5 Fortschritts-Kästchen aus dem Team-Fortschritt
-  function progCells(pr){
+  // 5 Fortschritts-Kästchen aus dem Team-Fortschritt (SF·AF·VF·HF·F)
+  function progBoxes(pr){
     const reached=pr.reached, st=pr.status;
     let bx='';
     for(let k=0;k<5;k++){
@@ -1627,9 +1634,31 @@
       else                     cls = '';
       bx += `<i class="${cls}"></i>`;
     }
-    const lab  = st==='champion' ? '🏆' : RABBR[reached];
-    const lcls = 'rnd ' + (st==='out' ? 'gone':'active');
-    return `<span class="${lcls}">${lab}</span><span class="boxes">${bx}</span>`;
+    return `<span class="boxes">${bx}</span>`;
+  }
+
+  // Vier Runden-Zahlen AF/VF/HF/F. In "Jetzt": erledigte = 100 dezent, nächste Hürde fett-gold.
+  function roundCells(d, pr){
+    const vals=[d.af, d.vf, d.hf, d.fin];
+    const reached=pr.reached, out=pr.status==='out';
+    let h='';
+    for(let j=0;j<4;j++){
+      if(probView==='now' && out){ h+=`<span class="col gone">–</span>`; continue; }
+      let cls='col';
+      if(probView==='now'){
+        if(j<reached)        cls+=' done';   // Runde schon erreicht → 100
+        else if(j===reached) cls+=' next';   // aktuelle Hürde → fett
+      }
+      h+=`<span class="${cls}">${Math.round(vals[j])}</span>`;
+    }
+    return h;
+  }
+  // Kopfzeile (unsichtbare Kästchen als Platzhalter, damit Spalten exakt fluchten)
+  function probHead(){
+    return `<div class="phead"><span class="pf"></span><span class="pteam"></span>`
+      + `<span class="boxes" style="visibility:hidden"><i></i><i></i><i></i><i></i><i></i></span>`
+      + `<span class="col">AF</span><span class="col">VF</span><span class="col">HF</span><span class="col">F</span>`
+      + `<span class="pwm">WM</span><span class="pfunnel"></span></div>`;
   }
 
   function renderProb(){
@@ -1652,7 +1681,7 @@
       return v>mx ? v : mx;
     }, 0) || 1;
 
-    let html='', topN=0, divDone=false;
+    let html=probHead(), topN=0, divDone=false;
     rows.forEach(({d,pr})=>{
       const t=TEAMS[d.i], out=pr.status==='out';
       if(probView==='now' && out && !divDone){ html += `<div class="pdiv">ausgeschieden · 0&nbsp;%</div>`; divDone=true; }
@@ -1661,7 +1690,8 @@
       const pct = titVal.toFixed(1).replace('.',',');
       html += `<div class="prow${isTop?' top':''}${out?' dead':''}"><span class="pf">${t.f}</span>`
         + `<span class="pteam">${code?t.c:t.n}</span>`
-        + progCells(pr)
+        + progBoxes(pr)
+        + roundCells(d, pr)
         + `<span class="pwm">${pct}</span>`
         + `<span class="pfunnel">${funnelBar(titVal, maxTit)}</span></div>`;
     });
