@@ -53,8 +53,8 @@
   .push-b{padding:9px 16px; border-radius:9px; border:1px solid rgba(160,190,255,.3);
     background:rgba(255,255,255,.05); color:#e8eeff; font-size:14px; font-weight:700; cursor:pointer;}
   #vstamp{position:absolute; top:100%; right:13px; margin-top:3px; z-index:6; pointer-events:none;
-    font-family:ui-monospace,monospace; font-size:8px; letter-spacing:.04em;
-    color:rgba(200,212,240,.45);}
+    font-family:ui-monospace,monospace; font-size:12px; letter-spacing:.04em; font-weight:700;
+    color:rgba(208,219,245,.62);}
 </style>
 </head>
 <body>
@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.0</span>
+    <span id="vstamp">v4.2</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -135,15 +135,15 @@
   .btn:active{background:rgba(255,255,255,.12);}
   .zoom{position:fixed; left:0; right:0; bottom:0; z-index:40;
     display:flex; align-items:center; gap:11px;
-    padding:4px 15px; padding-bottom:calc(4px + env(safe-area-inset-bottom));
+    padding:2px 15px; padding-bottom:calc(2px + env(safe-area-inset-bottom));
     background:rgba(14,25,66,.92); -webkit-backdrop-filter:blur(10px);
     backdrop-filter:blur(10px); border-top:1px solid rgba(150,180,255,.3);}
-  .zbtn{appearance:none; flex:0 0 auto; width:22px; height:22px; border:none;
-    background:transparent; color:var(--muted); font-size:18px; font-weight:700;
+  .zbtn{appearance:none; flex:0 0 auto; width:20px; height:20px; border:none;
+    background:transparent; color:var(--muted); font-size:17px; font-weight:700;
     line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
     padding:0; -webkit-user-select:none; user-select:none; touch-action:manipulation;}
   .zbtn:active{color:var(--txt);}
-  .zrange{flex:1 1 auto; height:22px; margin:0; padding:0; background:transparent;
+  .zrange{flex:1 1 auto; height:20px; margin:0; padding:0; background:transparent;
     -webkit-appearance:none; appearance:none; cursor:pointer; touch-action:manipulation;
     --fill:50%;}
   .zrange::-webkit-slider-runnable-track{height:4px; border-radius:3px;
@@ -188,6 +188,10 @@
 
   .pair{flex:1 1 auto; border:1.6px solid var(--card-bd); border-radius:9px;
     overflow:hidden; background:var(--card); backdrop-filter:blur(2px);}
+  .paircol{flex:1 1 auto; min-width:0; display:flex; flex-direction:column;}
+  .paircol > .pair{flex:0 0 auto;}
+  .pen{text-align:center; font-size:10px; font-weight:800; letter-spacing:.04em;
+    color:var(--gold); opacity:.92; line-height:1; padding:3px 0 1px;}
   .slot{display:flex; align-items:center; gap:7px; height:var(--row-h);
     padding:0 7px; cursor:pointer; font-size:12px; line-height:1;
     border-bottom:1px solid var(--line);
@@ -328,6 +332,13 @@
     {n:"Portugal",      f:"🇵🇹", id:41}, {n:"Kroatien",      f:"🇭🇷", id:46}
   ];
 
+  // ID -> englischer Name der Vergleichsquelle (openfootball) für Elfmeter-/Verlängerungs-Ausgang
+  const EN_NAME = {17:"Germany",14:"Paraguay",33:"France",23:"Sweden",2:"South Africa",5:"Canada",
+    21:"Netherlands",10:"Morocco",44:"Colombia",47:"Ghana",29:"Spain",39:"Austria",13:"USA",
+    6:"Bosnia & Herzegovina",25:"Belgium",34:"Senegal",9:"Brazil",22:"Japan",19:"Ivory Coast",
+    36:"Norway",1:"Mexico",20:"Ecuador",45:"England",42:"DR Congo",37:"Argentina",30:"Cape Verde",
+    15:"Australia",26:"Egypt",8:"Switzerland",38:"Algeria",41:"Portugal",46:"Croatia"};
+
   const LABELS = ["Letzte 32","Achtelfinale","Viertelfinale","Halbfinale","Finale"];
   const COUNTS = [16,8,4,2,1]; // Spiele pro Runde
 
@@ -340,6 +351,8 @@
   const scores = COUNTS.map(c => Array.from({length:c}, () => ["",""]));
   // telapsed[r][p] = time_elapsed der Quelle ("notstarted" | "finished" | Spielminute …); "" = noch unbekannt
   const telapsed = COUNTS.map(c => Array.from({length:c}, () => ""));
+  // penLabel[r][p] = Zusatz bei K.o.-Entscheidung ("3:4 i.E." | "n.V." | ""); aus Vergleichsquelle, nicht gespeichert
+  const penLabel = COUNTS.map(c => new Array(c).fill(""));
   // Offizielle Termine WM 2026 (deutsche Zeit / MESZ), zugeordnet zur Bracket-Position.
   // Runde 0 in Setzliste-Reihenfolge; Folgerunden über Sieger-Nummern zugeordnet u. mehrfach verifiziert.
   const DTS = [
@@ -364,6 +377,7 @@
   let official3 = false;   // echtes Ergebnis Spiel um Platz 3 -> gesperrt
   let score3 = ["",""];    // Ergebnis Spiel um Platz 3
   let telapsed3 = "";      // time_elapsed Spiel um Platz 3
+  let penLabel3 = "";      // K.o.-Zusatz Spiel um Platz 3 ("3:4 i.E." | "n.V." | "")
   let dt3 = ["18.07.","23:00"];   // Datum/Uhrzeit Spiel um Platz 3
   let zoom = 0.7;          // Zoomfaktor (+/- Tasten) – Start etwas kleiner, beide Spalten sichtbar
 
@@ -431,8 +445,9 @@
       scores[rr][pp]=["",""];        // Tore gehören zu konkreten Teams -> löschen
       official[rr][pp]=false;        // gelöschtes Folge-Ergebnis ist nicht mehr "echt"
       telapsed[rr][pp]="";           // Status gehört zur alten Paarung -> löschen
+      penLabel[rr][pp]="";           // K.o.-Zusatz gehört zur alten Paarung -> löschen
     }
-    third=null; score3=["",""]; official3=false; telapsed3="";   // HF-Verlierer können sich geändert haben
+    third=null; score3=["",""]; official3=false; telapsed3=""; penLabel3="";   // HF-Verlierer können sich geändert haben
   }
 
   function setWinner(r,p,side){
@@ -501,7 +516,9 @@
          + `<span class="d">${d}</span>`
          + `<span class="t">${t}</span>`
          + `</div>${badge}`
-         + `<div class="pair">${slotHTML(r,p,0)}${slotHTML(r,p,1)}</div></div>`;
+         + `<div class="paircol"><div class="pair">${slotHTML(r,p,0)}${slotHTML(r,p,1)}</div>`
+         + (penLabel[r][p] ? `<div class="pen">${esc(penLabel[r][p])}</div>` : "")
+         + `</div></div>`;
   }
 
   // Spiel um Platz 3 – gleicher Look wie ein normales Spiel (Datum/Zeit vorne),
@@ -531,8 +548,9 @@
          + `<span class="d">${d}</span>`
          + `<span class="t">${t}</span>`
          + `</div>${badge}`
-         + `<div class="pair">${row(lA,0)}${row(lB,1)}</div>`
-         + `</div></div>`;
+         + `<div class="paircol"><div class="pair">${row(lA,0)}${row(lB,1)}</div>`
+         + (penLabel3 ? `<div class="pen">${esc(penLabel3)}</div>` : "")
+         + `</div></div></div>`;
   }
 
 
@@ -728,6 +746,10 @@
         if(put(g, tA, `s-${r}-${p}`,
               v=>{scores[r][p]=v;}, ()=>scores[r][p],
               w=>{winner[r][p]=w; invalidateAfter(r,p);}, ()=>winner[r][p])) changed=true;
+        if(isFin(g) && winner[r][p]===null){          // beendetes Unentschieden -> Sieger aus Vergleichsquelle (Elfmeter/Verl.)
+          const res=ofResolve(tA.id, tB.id);
+          if(res){ winner[r][p]=res.win; invalidateAfter(r,p); penLabel[r][p]=res.label; changed=true; }
+        }
       }
     }
     // Spiel um Platz 3
@@ -742,6 +764,10 @@
         const st3=matchStatus(official3, dt3[0], dt3[1], telapsed3);
         if(st3==='live' || st3==='done'){
           if(put(g, lA, "s3", v=>{score3=v;}, ()=>score3, w=>{third=w;}, ()=>third)) changed=true;
+          if(isFin(g) && third===null){
+            const res=ofResolve(lA.id, lB.id);
+            if(res){ third=res.win; penLabel3=res.label; changed=true; }
+          }
         }
       }
     }
@@ -754,6 +780,31 @@
       if(el){ el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
     }
     flashFids.length = 0;
+  }
+  // ---- Vergleichsquelle (openfootball, public domain, CORS) für Elfmeter-/Verlängerungs-Ausgang ----
+  const OF_URL = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json";
+  let ofMatches = null;
+  function ofLoad(){
+    fetch(OF_URL, {cache:"no-store"}).then(r=>r.json()).then(d=>{
+      if(d && Array.isArray(d.matches)){ ofMatches = d.matches; fetchLive(); }  // nachladen -> sofort neu abgleichen
+    }).catch(()=>{ /* Vergleichsquelle offline -> Primärquelle bleibt maßgeblich */ });
+  }
+  // Liefert {win:0|1, label} für ein beendetes Unentschieden (Sieger aus Elfmeter > Verlängerung > regulär), sonst null
+  function ofResolve(idTop, idBot){
+    if(!ofMatches) return null;
+    const nT=EN_NAME[idTop], nB=EN_NAME[idBot];
+    if(!nT||!nB) return null;
+    const m=ofMatches.find(x=>(x.team1===nT&&x.team2===nB)||(x.team1===nB&&x.team2===nT));
+    if(!m||!m.score) return null;
+    const flip=(m.team1===nB);   // openfootball-Reihenfolge ggf. vertauscht -> auf oben/unten drehen
+    const pick=arr=>{ if(!Array.isArray(arr)||arr.length<2) return null;
+                      const a=+arr[0], b=+arr[1]; if(Number.isNaN(a)||Number.isNaN(b)) return null;
+                      return flip?[b,a]:[a,b]; };
+    const pen=pick(m.score.p), et=pick(m.score.et), ft=pick(m.score.ft);
+    if(pen && pen[0]!==pen[1]) return {win:pen[0]>pen[1]?0:1, label:pen[0]+":"+pen[1]+" i.E."};
+    if(et  && et[0]!==et[1])   return {win:et[0]>et[1]?0:1,   label:"n.V."};
+    if(ft  && ft[0]!==ft[1])   return {win:ft[0]>ft[1]?0:1,   label:""};
+    return null;
   }
   function fetchLive(){
     flashFids.length = 0;
@@ -772,7 +823,9 @@
   render();
   applyZoom();
   fetchLive();
+  ofLoad();                          // Vergleichsquelle laden (löst danach Elfmeter-/Verlängerungs-Ausgänge auf)
   setInterval(fetchLive, 30000);   // alle 30 s echten Live-Stand abgleichen
+  setInterval(ofLoad, 5*60000);      // openfootball aktualisiert langsam -> alle 5 Min nachladen
   setInterval(render, 60000);      // Status-Rahmen (bald/läuft) aktuell halten
 })();
 [[SCRIPTEND]]
@@ -1798,6 +1851,13 @@
     var tabs=document.querySelectorAll('.swtab');
     for(var i=0;i<tabs.length;i++){ tabs[i].addEventListener('click', (function(t){ return function(){ show(t.dataset.v); }; })(tabs[i])); }
     load('b'); // K.o.-Runde sofort, Simulation erst bei Bedarf
+
+    // ---- Voller-Viewport-Lock: setzt die echte sichtbare Hoehe (iOS-PWA: dvh/vh/% greifen unten nicht zuverlaessig) ----
+    function fitViewport(){ document.body.style.height = window.innerHeight + "px"; }
+    fitViewport();
+    window.addEventListener("resize", fitViewport);
+    window.addEventListener("orientationchange", function(){ setTimeout(fitViewport, 250); });
+    setTimeout(fitViewport, 300);   // iOS meldet innerHeight direkt nach Start manchmal zu frueh
 
     // ---- Push-Benachrichtigungen ----
     var VAPID_PUBLIC="BN4D-4wP9HRIVODTcIujObUQxfkUqy56KCLP9MZxln7arr1gchpqWQv8BG9m0xwqXASCkfNwUr6ta5jx6FUGJS4";
