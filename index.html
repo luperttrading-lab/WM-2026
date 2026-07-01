@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.17</span>
+    <span id="vstamp">v4.19</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -116,30 +116,31 @@
     padding-top:8px;
     padding-bottom:calc(48px + env(safe-area-inset-bottom));}
 
-  header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin:2px 0 10px;}
+  header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin:15px 0 10px;}
   header .htext{flex:0 0 auto;}
-  header .k{font-size:11px; letter-spacing:.26em; font-weight:700; color:var(--gold);
+  header .k{font-size:13px; letter-spacing:.3em; font-weight:700; color:var(--gold);
     text-transform:uppercase; opacity:.92; white-space:nowrap;}
-  header h1{margin:1px 0 0; font-size:26px; font-weight:800; letter-spacing:.05em;
+  header h1{margin:2px 0 0; font-size:31px; font-weight:800; letter-spacing:.06em;
     text-transform:uppercase; line-height:1;
     background:linear-gradient(180deg,#fff 0%,#cdd8ff 100%);
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
-  header .hr{width:96px; height:2px; margin:8px 0 0;
+  header .hr{width:128px; height:2px; margin:9px 0 0;
     background:linear-gradient(90deg,var(--gold),transparent);}
   /* Titel-Prognose rechts oben (Top 4, live gerechnet, bedingt auf echte Ergebnisse) */
-  .pred{flex:1 1 auto; max-width:200px; background:var(--card);
-    border:1px solid rgba(160,190,255,.16); border-radius:11px; padding:6px 9px 5px; min-width:0;}
-  .pred .pt{font-size:8px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
+  .pred{flex:0 0 auto; width:fit-content; max-width:172px;
+    background:var(--card); border:1px solid rgba(160,190,255,.16); border-radius:10px;
+    padding:5px 8px 4px; min-width:0;}
+  .pred .pt{font-size:7px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
     font-weight:800; margin-bottom:3px;}
-  .pred .pr{display:flex; align-items:center; gap:5px; padding:1.3px 0; min-width:0;}
+  .pred .pr{display:flex; align-items:center; gap:5px; padding:1px 0; min-width:0;}
   .pred .pr+.pr{border-top:1px solid rgba(160,190,255,.08);}
-  .pred .pfl{font-size:10.5px; flex:0 0 auto; line-height:1;}
-  .pred .pnm{font-size:10px; font-weight:700; color:var(--txt); white-space:nowrap;
+  .pred .pfl{font-size:9px; flex:0 0 auto; line-height:1;}
+  .pred .pnm{font-size:9px; font-weight:700; color:var(--txt); white-space:nowrap;
     overflow:hidden; text-overflow:ellipsis; min-width:0;}
-  .pred .ppc{margin-left:auto; font-size:10px; font-weight:800; color:var(--gold);
-    font-variant-numeric:tabular-nums; padding-left:5px; flex:0 0 auto;}
+  .pred .ppc{margin-left:auto; font-size:9px; font-weight:800; color:var(--gold);
+    font-variant-numeric:tabular-nums; padding-left:9px; flex:0 0 auto;}
   .pred.empty{display:flex; align-items:center; justify-content:center; color:var(--muted);
-    font-size:9.5px; text-align:center; min-height:34px;}
+    font-size:8.5px; text-align:center; min-height:30px;}
 
   .toolbar{display:flex; align-items:center; justify-content:flex-start; gap:10px;
     flex-wrap:wrap; margin-bottom:12px;}
