@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.14</span>
+    <span id="vstamp">v4.16</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -113,22 +113,37 @@
   .app{position:relative; z-index:1; min-height:100vh;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
     color:var(--txt); padding:10px 10px;
-    padding-top:calc(14px + env(safe-area-inset-top));
+    padding-top:8px;
     padding-bottom:calc(48px + env(safe-area-inset-bottom));}
 
-  header{text-align:center; margin:6px 0 14px;}
-  header .k{font-size:13px; letter-spacing:.32em; font-weight:700; color:var(--gold);
-    text-transform:uppercase; opacity:.92;}
-  header h1{margin:2px 0 0; font-size:30px; font-weight:800; letter-spacing:.06em;
+  header{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin:2px 0 10px;}
+  header .htext{flex:0 0 auto;}
+  header .k{font-size:11px; letter-spacing:.26em; font-weight:700; color:var(--gold);
+    text-transform:uppercase; opacity:.92; white-space:nowrap;}
+  header h1{margin:1px 0 0; font-size:26px; font-weight:800; letter-spacing:.05em;
     text-transform:uppercase; line-height:1;
     background:linear-gradient(180deg,#fff 0%,#cdd8ff 100%);
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
-  header .hr{width:140px; height:2px; margin:11px auto 0;
-    background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+  header .hr{width:96px; height:2px; margin:8px 0 0;
+    background:linear-gradient(90deg,var(--gold),transparent);}
+  /* Titel-Prognose rechts oben (Top 4, live gerechnet, bedingt auf echte Ergebnisse) */
+  .pred{flex:1 1 auto; max-width:222px; background:var(--card);
+    border:1px solid rgba(160,190,255,.16); border-radius:12px; padding:7px 10px 6px; min-width:0;}
+  .pred .pt{font-size:8.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted);
+    font-weight:800; margin-bottom:4px;}
+  .pred .pr{display:flex; align-items:center; gap:6px; padding:1.6px 0; min-width:0;}
+  .pred .pr+.pr{border-top:1px solid rgba(160,190,255,.08);}
+  .pred .pfl{font-size:12px; flex:0 0 auto; line-height:1;}
+  .pred .pnm{font-size:11px; font-weight:700; color:var(--txt); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; min-width:0;}
+  .pred .ppc{margin-left:auto; font-size:11px; font-weight:800; color:var(--gold);
+    font-variant-numeric:tabular-nums; padding-left:6px; flex:0 0 auto;}
+  .pred.empty{display:flex; align-items:center; justify-content:center; color:var(--muted);
+    font-size:10px; text-align:center; min-height:38px;}
 
-  .toolbar{display:flex; align-items:center; justify-content:center; gap:10px;
+  .toolbar{display:flex; align-items:center; justify-content:flex-start; gap:10px;
     flex-wrap:wrap; margin-bottom:12px;}
-  .hint{font-size:12px; color:var(--muted); text-align:center;}
+  .hint{font-size:12px; color:var(--muted); text-align:left;}
   .btn{appearance:none; border:1px solid var(--card-bd); background:var(--card);
     color:var(--txt); font-size:12.5px; font-weight:600; padding:7px 13px;
     border-radius:9px; cursor:pointer; letter-spacing:.02em;}
@@ -234,6 +249,9 @@
   .score.flash{ animation: scflash 1.2s ease; }
   @keyframes scflash{ 0%,35%{ background:var(--gold); color:#1a1305; border-color:var(--gold);
     box-shadow:0 0 0 2px rgba(244,198,74,.5); } 100%{} }
+  .score.flashdown{ animation: scflashdown 1.2s ease; }   /* Spielstand gesunken = Tor aberkannt */
+  @keyframes scflashdown{ 0%,35%{ background:#e3433c; color:#fff; border-color:#e3433c;
+    box-shadow:0 0 0 2px rgba(227,67,60,.5); } 100%{} }
   /* Spiel-Status: "bald" (≤1 Std vor Anpfiff) = goldener Rahmen, "läuft" = pulsierend rot */
   .match.soon .pair{ border-color:rgba(244,198,74,.85);
     box-shadow:0 0 0 1px rgba(244,198,74,.30), 0 0 9px rgba(244,198,74,.22); }
@@ -304,9 +322,12 @@
 <div class="bg"></div>
 <div class="app">
   <header>
-    <div class="k">Die K.o.-Runde der</div>
-    <h1>WM 2026</h1>
-    <div class="hr"></div>
+    <div class="htext">
+      <div class="k">Die K.o.-Runde der</div>
+      <h1>WM 2026</h1>
+      <div class="hr"></div>
+    </div>
+    <div class="pred empty" id="pred">Titel-Prognose&nbsp;…</div>
   </header>
 
   <div class="toolbar">
@@ -649,6 +670,78 @@
   }
 
 
+  // ===== Titel-Prognose (rechts oben): schlanke Monte-Carlo aus den Elo-Werten,
+  //       bedingt auf die echten bisherigen Ergebnisse. Gleiches Modell wie im
+  //       Simulator (Jetzt, Divisor 600, ohne Heim/Turnierfaktor). =====
+  const PRED_LN10 = Math.log(10), PRED_DIV = 600, PRED_N = 50000;
+  // Elo-Ratings in Bracket-Slot-Reihenfolge (muss mit den Werten im Simulator-Tab übereinstimmen)
+  const PRED_ELO = [1735.77,1505.35,1870.70,1509.79,1428.38,1559.48,1753.57,1755.10,1698.35,1380.00,
+    1874.71,1597.40,1671.23,1387.22,1742.24,1684.07,1765.86,1661.58,1540.87,1557.44,1687.48,1598.52,
+    1828.02,1474.43,1877.27,1350.00,1579.34,1562.37,1650.06,1571.03,1767.85,1714.87];
+  function predBuildFixed(){
+    const fw = COUNTS.map(c=>new Array(c).fill(null));
+    const dec=(r,m)=>{ const off=official[r]&&official[r][m]; const w=winner[r]&&winner[r][m];
+      return off && (w===0||w===1) ? w : null; };
+    for(let m=0;m<COUNTS[0];m++){ const w=dec(0,m); if(w!==null) fw[0][m]=2*m+w; }
+    for(let r=1;r<5;r++) for(let m=0;m<COUNTS[r];m++){
+      const a=fw[r-1][2*m], b=fw[r-1][2*m+1], w=dec(r,m);
+      if(a!=null && b!=null && w!==null) fw[r][m] = w===0?a:b;
+    }
+    return fw;
+  }
+  function predTitleProb(N){
+    const NT=TEAMS.length;
+    const pts=new Float64Array(NT);
+    for(let i=0;i<NT;i++) pts[i]=PRED_ELO[i];
+    const fw=predBuildFixed();
+    const tit=new Float64Array(NT);
+    const cur=new Int32Array(NT), nxt=new Int32Array(NT);
+    for(let s=0;s<N;s++){
+      for(let i=0;i<NT;i++) cur[i]=i;
+      let len=NT, r=0;
+      while(len>1){
+        const half=len>>1, fwr=fw[r];
+        for(let m=0;m<half;m++){
+          const fx=fwr?fwr[m]:null;
+          if(fx!=null){ nxt[m]=fx; }
+          else{
+            const a=cur[2*m], b=cur[2*m+1];
+            const ea=1/(1+Math.exp(PRED_LN10*(pts[b]-pts[a])/PRED_DIV));
+            nxt[m]=Math.random()<ea?a:b;
+          }
+        }
+        for(let m=0;m<half;m++) cur[m]=nxt[m];
+        len=half; r++;
+      }
+      tit[cur[0]]++;
+    }
+    const out=[];
+    for(let i=0;i<NT;i++) out.push({i, tit:tit[i]/N*100});
+    out.sort((a,b)=>b.tit-a.tit);
+    return out;
+  }
+  function renderPred(){
+    const el=document.getElementById('pred');
+    if(!el) return;
+    const ranked=predTitleProb(PRED_N).filter(t=>t.tit>0).slice(0,4);
+    if(!ranked.length){ el.className='pred empty'; el.textContent='Titel-Prognose …'; return; }
+    const fmt=v=> (v>=10 ? v.toFixed(1) : v.toFixed(1)).replace('.',',')+'%';
+    el.className='pred';
+    el.innerHTML='<div class="pt">Titel-Prognose</div>' + ranked.map(t=>{
+      const tm=TEAMS[t.i];
+      return `<div class="pr"><span class="pfl">${tm.f}</span>`
+           + `<span class="pnm">${tm.n}</span><span class="ppc">${fmt(t.tit)}</span></div>`;
+    }).join('');
+  }
+  // nur neu rechnen, wenn sich der echte Bracket-Stand geändert hat (Simulation ~ teuer)
+  let lastPredSig = null;
+  function maybePred(){
+    const sig = JSON.stringify(winner) + '|' + JSON.stringify(official);
+    if(sig===lastPredSig) return;
+    lastPredSig = sig;
+    renderPred();
+  }
+
   function render(){
     dayMap = buildDayMap();
     let html="";
@@ -689,6 +782,7 @@
 
     saveState();
     requestAnimationFrame(drawLines);
+    requestAnimationFrame(maybePred);
   }
 
   // Neu zeichnen, aber Fokus + Cursor im aktiven Eingabefeld erhalten
@@ -817,8 +911,9 @@
       if(so===null || su===null) return false;
       let ch=false;
       const cur=getScore();
-      if(cur[0]!==String(so)){ flashFids.push(fidBase+"-0"); ch=true; }
-      if(cur[1]!==String(su)){ flashFids.push(fidBase+"-1"); ch=true; }
+      const pO=parseInt(cur[0],10), pU=parseInt(cur[1],10);
+      if(cur[0]!==String(so)){ flashFids.push({fid:fidBase+"-0", down:!isNaN(pO)&&so<pO}); ch=true; }
+      if(cur[1]!==String(su)){ flashFids.push({fid:fidBase+"-1", down:!isNaN(pU)&&su<pU}); ch=true; }
       if(ch) setScore([String(so),String(su)]);
       if(isFin(g)){                                   // Sieger + Sperre erst bei Abpfiff
         const w = scoreWinner(String(so), String(su));
@@ -864,9 +959,10 @@
   }
 
   function flashChanged(){
-    for(const fid of flashFids){
-      const el=document.querySelector(`.score[data-fid="${fid}"]`);
-      if(el){ el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+    for(const f of flashFids){
+      const el=document.querySelector(`.score[data-fid="${f.fid}"]`);
+      if(el){ el.classList.remove("flash","flashdown"); void el.offsetWidth;
+              el.classList.add(f.down ? "flashdown" : "flash"); }
     }
     flashFids.length = 0;
   }
