@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.19</span>
+    <span id="vstamp">v4.20</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -185,6 +185,7 @@
     justify-content:space-around; flex:0 0 auto;}
   .round.r0{gap:4px;}
   .round.r0,.round.r1,.round.r2,.round.r3,.round.r4{width:258px;}
+  .round.wide{width:300px;}   /* Runde mit Elfmeterschießen: mehr Platz für den Namen neben den 3 Kästchen */
   .round.champ{width:208px; justify-content:center;}
 
   .rlabel{position:absolute; top:-22px; left:0; right:0; text-align:center;
@@ -747,6 +748,9 @@
     dayMap = buildDayMap();
     let html="";
     for(let r=0;r<COUNTS.length;r++){
+      // Runde mit Elfmeterschießen (3 gestaffelte Kästchen) -> Spalte verbreitern, sonst wird der Name zu "D…"
+      let wide=false;
+      for(let p=0;p<COUNTS[r];p++){ if(koStages[r][p] && koStages[r][p].length>=3){ wide=true; break; } }
       let inner=`<div class="rlabel">${LABELS[r]}</div>`;
       if(r===4){
         // Finale + Spiel um Platz 3 zusammen (Platz-3 schwebt absolut unter dem Finale)
@@ -754,7 +758,7 @@
       } else {
         for(let p=0;p<COUNTS[r];p++) inner+=matchHTML(r,p);
       }
-      html+=`<div class="round r${r}">${inner}</div>`;
+      html+=`<div class="round r${r}${wide?' wide':''}">${inner}</div>`;
     }
 
     // ---- Letzte Spalte: Pokal + Endstand (Top 4) ----
