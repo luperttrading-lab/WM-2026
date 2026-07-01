@@ -62,7 +62,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.16</span>
+    <span id="vstamp">v4.17</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -127,19 +127,19 @@
   header .hr{width:96px; height:2px; margin:8px 0 0;
     background:linear-gradient(90deg,var(--gold),transparent);}
   /* Titel-Prognose rechts oben (Top 4, live gerechnet, bedingt auf echte Ergebnisse) */
-  .pred{flex:1 1 auto; max-width:222px; background:var(--card);
-    border:1px solid rgba(160,190,255,.16); border-radius:12px; padding:7px 10px 6px; min-width:0;}
-  .pred .pt{font-size:8.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted);
-    font-weight:800; margin-bottom:4px;}
-  .pred .pr{display:flex; align-items:center; gap:6px; padding:1.6px 0; min-width:0;}
+  .pred{flex:1 1 auto; max-width:200px; background:var(--card);
+    border:1px solid rgba(160,190,255,.16); border-radius:11px; padding:6px 9px 5px; min-width:0;}
+  .pred .pt{font-size:8px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted);
+    font-weight:800; margin-bottom:3px;}
+  .pred .pr{display:flex; align-items:center; gap:5px; padding:1.3px 0; min-width:0;}
   .pred .pr+.pr{border-top:1px solid rgba(160,190,255,.08);}
-  .pred .pfl{font-size:12px; flex:0 0 auto; line-height:1;}
-  .pred .pnm{font-size:11px; font-weight:700; color:var(--txt); white-space:nowrap;
+  .pred .pfl{font-size:10.5px; flex:0 0 auto; line-height:1;}
+  .pred .pnm{font-size:10px; font-weight:700; color:var(--txt); white-space:nowrap;
     overflow:hidden; text-overflow:ellipsis; min-width:0;}
-  .pred .ppc{margin-left:auto; font-size:11px; font-weight:800; color:var(--gold);
-    font-variant-numeric:tabular-nums; padding-left:6px; flex:0 0 auto;}
+  .pred .ppc{margin-left:auto; font-size:10px; font-weight:800; color:var(--gold);
+    font-variant-numeric:tabular-nums; padding-left:5px; flex:0 0 auto;}
   .pred.empty{display:flex; align-items:center; justify-content:center; color:var(--muted);
-    font-size:10px; text-align:center; min-height:38px;}
+    font-size:9.5px; text-align:center; min-height:34px;}
 
   .toolbar{display:flex; align-items:center; justify-content:flex-start; gap:10px;
     flex-wrap:wrap; margin-bottom:12px;}
@@ -673,7 +673,7 @@
   // ===== Titel-Prognose (rechts oben): schlanke Monte-Carlo aus den Elo-Werten,
   //       bedingt auf die echten bisherigen Ergebnisse. Gleiches Modell wie im
   //       Simulator (Jetzt, Divisor 600, ohne Heim/Turnierfaktor). =====
-  const PRED_LN10 = Math.log(10), PRED_DIV = 600, PRED_N = 50000;
+  const PRED_LN10 = Math.log(10), PRED_DIV = 600, PRED_N = 200000;
   // Elo-Ratings in Bracket-Slot-Reihenfolge (muss mit den Werten im Simulator-Tab übereinstimmen)
   const PRED_ELO = [1735.77,1505.35,1870.70,1509.79,1428.38,1559.48,1753.57,1755.10,1698.35,1380.00,
     1874.71,1597.40,1671.23,1387.22,1742.24,1684.07,1765.86,1661.58,1540.87,1557.44,1687.48,1598.52,
