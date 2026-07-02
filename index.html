@@ -64,7 +64,8 @@
     background:rgba(255,255,255,.05); color:#e8eeff; font-size:14px; font-weight:700; cursor:pointer;}
   #vstamp{position:absolute; top:100%; right:13px; margin-top:3px; z-index:6; pointer-events:none;
     font-family:ui-monospace,monospace; font-size:12px; letter-spacing:.04em; font-weight:700;
-    color:rgba(208,219,245,.62);}
+    color:rgba(208,219,245,.62); transition:opacity 1s ease;}
+  #vstamp.faded{opacity:0;}
 </style>
 </head>
 <body>
@@ -72,7 +73,7 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.22</span>
+    <span id="vstamp">v4.24</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
@@ -1440,8 +1441,8 @@
     <div class="actionrow">
       <button class="rollbtn" id="rollBtn">🎲 Turnier auswürfeln</button>
       <div class="nmtog" role="group" aria-label="Namensanzeige">
-        <button type="button" data-mode="code" class="on">Kürzel</button>
-        <button type="button" data-mode="full">Name</button>
+        <button type="button" data-mode="code">Kürzel</button>
+        <button type="button" data-mode="full" class="on">Name</button>
       </div>
     </div>
     <div class="treewrap" id="treeWrap">
@@ -1461,8 +1462,8 @@
     <div class="actionrow">
       <button class="rollbtn" id="liveBtn">▶ Anpfiff</button>
       <div class="nmtog" role="group" aria-label="Namensanzeige">
-        <button type="button" data-lmode="code" class="on">Kürzel</button>
-        <button type="button" data-lmode="full">Name</button>
+        <button type="button" data-lmode="code">Kürzel</button>
+        <button type="button" data-lmode="full" class="on">Name</button>
       </div>
       <button type="button" id="goalTog" class="goaltog on" aria-pressed="true">⚽ Tore</button>
     </div>
@@ -1556,7 +1557,7 @@
 
   // Namensanzeige: 'full' = voller Name, 'code' = FIFA-3-Buchstaben-Kürzel
   let nameMode = 'full';
-  const modeByTab = {prob:'full', single:'code'};
+  const modeByTab = {prob:'full', single:'full'};
   let activeNameTab = 'prob';
   const teamLabel = t => nameMode === 'code' ? t.c : t.n;
   let SCORES_IN_NAME_MODE = false;  // Tore nur im Kürzel-Modus (Namen sonst zu kurz)
@@ -2072,7 +2073,7 @@
   const conf=$("conf"), liveRound=$("liveRound"), liveClock=$("liveClock");
   const liveBtn=$("liveBtn"), liveDur=$("liveDur"), liveDurVal=$("liveDurVal");
   const RLABEL=["Sechzehntelfinale","Achtelfinale","Viertelfinale","Halbfinale","Finale"];
-  let liveNameMode="code", liveAbort=false, liveRunning=false, liveTimer=null, liveRaf=null, liveMatches=null, liveSim=null, liveScrolled=false;
+  let liveNameMode="full", liveAbort=false, liveRunning=false, liveTimer=null, liveRaf=null, liveMatches=null, liveSim=null, liveScrolled=false;
   const liveLabel = t => liveNameMode==="code" ? t.c : t.n;
   function fmtDur(s){ return s<60 ? s+" s" : (s%60===0 ? (s/60)+" min" : Math.floor(s/60)+":"+String(s%60).padStart(2,"0")+" min"); }
   function durUpdate(){ liveDurVal.textContent=fmtDur(+liveDur.value); setFill(liveDur); }
@@ -2302,6 +2303,10 @@
     var tabs=document.querySelectorAll('.swtab');
     for(var i=0;i<tabs.length;i++){ tabs[i].addEventListener('click', (function(t){ return function(){ show(t.dataset.v); }; })(tabs[i])); }
     load('b'); // K.o.-Runde sofort, Simulation erst bei Bedarf
+
+    // Versions-Stempel nach 6 s ausblenden: wird nur fuer den Upload-Check gebraucht
+    // und ueberlappt sonst Inhalte direkt unter der Tab-Leiste (z.B. Spieldauer-Wert im Live-Tab).
+    setTimeout(function(){ var v=document.getElementById('vstamp'); if(v) v.classList.add('faded'); }, 6000);
 
     // ---- Voller-Viewport-Lock: setzt die echte sichtbare Hoehe (iOS-PWA: dvh/vh/% greifen unten nicht zuverlaessig) ----
     function fitViewport(){ document.body.style.height = window.innerHeight + "px"; }
