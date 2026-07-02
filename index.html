@@ -26,6 +26,16 @@
   .frames{flex:1 1 auto; position:relative; min-height:0;}
   .frame{position:absolute; inset:0; width:100%; height:100%; border:0; display:block; background:#16245e;}
   .frame.hidden{display:none;}
+  /* Tor-Ticker (lebt im Wrapper -> klebt am echten Bildschirmrand). Standzeit kurz -> bei vielen Toren schneller Wechsel. */
+  .gticker{position:fixed; left:50%; bottom:calc(3px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(14px); z-index:120; max-width:94vw; white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; background:rgba(13,20,38,.96); color:#eef2ff;
+    border:1px solid rgba(244,198,74,.55); border-radius:999px; padding:6px 14px;
+    font-size:12.5px; font-weight:800; letter-spacing:.01em; pointer-events:none; opacity:0;
+    box-shadow:0 5px 18px rgba(0,0,0,.55); transition:opacity .16s ease, transform .16s ease;}
+  .gticker.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .gticker .gtf{margin-right:6px;}
+  .gticker .gtmin{color:#f4c64a; margin:0 6px 0 2px; font-variant-numeric:tabular-nums;}
   .bell{flex:0 0 auto; position:relative; width:46px; padding:10px 0; border-radius:11px;
     border:1px solid rgba(160,190,255,.22); background:rgba(255,255,255,.04);
     color:#8190c4; font-size:18px; cursor:pointer; transition:background .15s,color .15s;}
@@ -62,12 +72,14 @@
     <button class="swtab active" data-v="b">🏆 K.o.-Runde</button>
     <button class="swtab" data-v="s">🎲 Simulation</button>
     <button class="bell" id="bellBtn" title="Tor-Benachrichtigungen">🔔</button>
-    <span id="vstamp">v4.21</span>
+    <span id="vstamp">v4.22</span>
   </div>
   <div class="frames">
     <iframe id="fb" class="frame" title="K.o.-Runde"></iframe>
     <iframe id="fs" class="frame hidden" title="Simulation"></iframe>
   </div>
+
+  <div class="gticker" id="gticker" aria-live="polite"></div>
 
   <div id="pushOv" class="push-ov hidden">
     <div class="push-card">
@@ -1098,16 +1110,6 @@
     border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer;
     transition:background .18s, color .18s, border-color .18s;}
   .goaltog.on{background:rgba(244,198,74,.16); border-color:rgba(244,198,74,.6); color:var(--gold);}
-  /* Tor-Ticker: schwebt am unteren Rand, blendet pro Tor kurz ein, blockt keine Taps */
-  .gticker{position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom));
-    transform:translateX(-50%) translateY(16px); z-index:70; max-width:92vw; white-space:nowrap;
-    overflow:hidden; text-overflow:ellipsis; background:rgba(13,20,38,.96); color:var(--txt);
-    border:1px solid rgba(244,198,74,.55); border-radius:999px; padding:9px 17px;
-    font-size:15px; font-weight:800; letter-spacing:.01em; pointer-events:none; opacity:0;
-    box-shadow:0 6px 20px rgba(0,0,0,.55); transition:opacity .16s ease, transform .16s ease;}
-  .gticker.show{opacity:1; transform:translateX(-50%) translateY(0);}
-  .gticker .gtf{margin-right:6px;}
-  .gticker .gtmin{color:var(--gold); margin:0 7px 0 2px; font-variant-numeric:tabular-nums;}
   .durrow{display:flex; align-items:center; gap:10px; margin:2px 2px 10px;}
   .durlbl{font-size:12px; color:var(--muted); flex:0 0 auto; display:flex; align-items:center;}
   .durval{font-size:12.5px; color:var(--txt); font-weight:800; min-width:46px; text-align:right; flex:0 0 auto;
@@ -1477,8 +1479,6 @@
     <div id="liveFinish"></div>
   </div>
 </div>
-
-<div class="gticker" id="gticker" aria-live="polite"></div>
 
 <div class="imodal" id="imodal">
   <div class="imodal-card">
@@ -2079,22 +2079,21 @@
   liveDur.addEventListener("input",durUpdate); durUpdate();
 
   // Tor-Ticker: blendet pro Tor kurz unten ein, wer getroffen hat. Standard: an.
-  const goalTog=$("goalTog"), gticker=$("gticker");
-  let goalTogOn=true, gtHideTimer=null;
+  // Der Ticker selbst lebt im WRAPPER (aeussere Seite) -> klebt am echten Bildschirmrand,
+  // nicht am iframe-Ende. Hier nur die Meldung ans Elternfenster.
+  const goalTog=$("goalTog");
+  let goalTogOn=true;
   goalTog.addEventListener("click",()=>{
     goalTogOn=!goalTogOn;
     goalTog.classList.toggle("on",goalTogOn);
     goalTog.setAttribute("aria-pressed", goalTogOn?"true":"false");
-    if(!goalTogOn) gticker.classList.remove("show");
+    if(!goalTogOn){ try{ parent.postMessage({wm:"goalhide"},"*"); }catch(e){} }
   });
   function showGoal(teamIdx, min){
     if(!goalTogOn) return;
     const t=TEAMS[teamIdx]; if(!t) return;
-    gticker.innerHTML = `⚽<span class="gtf">${t.f}</span><span class="gtmin">${min}'</span>${liveLabel(t)}`;
-    gticker.classList.add("show");
-    if(gtHideTimer) clearTimeout(gtHideTimer);
-    // kurze Standzeit -> bei vielen Toren schneller Wechsel (gewuenscht)
-    gtHideTimer=setTimeout(()=>gticker.classList.remove("show"), 2500);
+    // immer voller Laendername (t.n), unabhaengig vom Kuerzel/Name-Umschalter
+    try{ parent.postMessage({wm:"goal", f:t.f, min:min, name:t.n}, "*"); }catch(e){}
   }
 
   // Tor-Minuten aus dem fertigen Spiel ableiten (rein kosmetisch -> Endergebnis bleibt exakt gleich)
@@ -2134,7 +2133,7 @@
   const liveSleep = ms => new Promise(r=>{ liveTimer=setTimeout(r,ms); });
   function stopLive(){ liveAbort=true; liveRunning=false;
     if(liveTimer) clearTimeout(liveTimer); if(liveRaf) cancelAnimationFrame(liveRaf);
-    if(gticker) gticker.classList.remove("show");
+    try{ parent.postMessage({wm:"goalhide"},"*"); }catch(e){}
     liveBtn.textContent="▶ Anpfiff"; }
   function flashScore(i,txt){ const el=conf.querySelector(`.cscore[data-sc="${i}"]`);
     if(!el) return; el.textContent=txt; el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
@@ -2272,6 +2271,21 @@
     "use strict";
     var fb=document.getElementById('fb'), fs=document.getElementById('fs');
     var loaded={b:false,s:false};
+    // ---- Tor-Ticker (vom Simulator-iframe per postMessage gespeist) ----
+    var gticker=document.getElementById('gticker'), gtHide=null, curTab='b';
+    function hideGoal(){ if(gticker) gticker.classList.remove('show'); }
+    function showGoalWrap(f,min,name){
+      if(!gticker) return;
+      gticker.innerHTML='\u26BD<span class="gtf">'+f+'</span><span class="gtmin">'+min+"'"+'</span>'+name;
+      gticker.classList.add('show');
+      if(gtHide) clearTimeout(gtHide);
+      gtHide=setTimeout(function(){ gticker.classList.remove('show'); }, 2500);
+    }
+    window.addEventListener('message', function(e){
+      var d=e.data; if(!d||!d.wm) return;
+      if(d.wm==='goal'){ if(curTab==='s') showGoalWrap(d.f, d.min, d.name); }
+      else if(d.wm==='goalhide'){ hideGoal(); }
+    });
     function unesc(s){ return s.replace(/\[\[SCRIPTEND\]\]/g, '</'+'script>'); }
     function load(w){
       if(w==='b' && !loaded.b){ fb.srcdoc=unesc(document.getElementById('srcB').textContent); loaded.b=true; }
@@ -2283,6 +2297,7 @@
       fs.classList.toggle('hidden', w!=='s');
       var tabs=document.querySelectorAll('.swtab');
       for(var i=0;i<tabs.length;i++){ tabs[i].classList.toggle('active', tabs[i].dataset.v===w); }
+      curTab=w; if(w!=='s') hideGoal();   // Ticker nur im Simulations-Tab zeigen
     }
     var tabs=document.querySelectorAll('.swtab');
     for(var i=0;i<tabs.length;i++){ tabs[i].addEventListener('click', (function(t){ return function(){ show(t.dataset.v); }; })(tabs[i])); }
